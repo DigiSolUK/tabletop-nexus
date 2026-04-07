@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" role="img" aria-label="TableTop Nexus">
+  <defs>
+    <linearGradient id="bg" x1="0%" x2="100%" y1="0%" y2="100%">
+      <stop offset="0%" stop-color="#07111d" />
+      <stop offset="100%" stop-color="#0b1d33" />
+    </linearGradient>
+    <linearGradient id="accent" x1="0%" x2="100%" y1="0%" y2="100%">
+      <stop offset="0%" stop-color="#22d3ee" />
+      <stop offset="100%" stop-color="#5eead4" />
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)" />
+  <circle cx="1020" cy="120" r="180" fill="#22d3ee" opacity="0.12" />
+  <circle cx="160" cy="520" r="220" fill="#f59e0b" opacity="0.08" />
+  <rect x="82" y="82" width="1036" height="466" rx="36" fill="#091422" stroke="#153049" />
+  <text x="130" y="220" fill="#5eead4" font-family="Segoe UI, Arial, sans-serif" font-size="28" letter-spacing="4">OFFLINE-FIRST DESKTOP PLATFORM</text>
+  <text x="130" y="312" fill="#eff6ff" font-family="Georgia, 'Times New Roman', serif" font-size="78" font-weight="700">TableTop Nexus</text>
+  <text x="130" y="392" fill="#9fb2c8" font-family="Segoe UI, Arial, sans-serif" font-size="34">Board, card, and party-night downloads hosted through GitHub Releases.</text>
+  <rect x="130" y="442" width="310" height="62" rx="20" fill="url(#accent)" opacity="0.22" />
+  <text x="166" y="482" fill="#eff6ff" font-family="Segoe UI, Arial, sans-serif" font-size="28" font-weight="700">Windows • macOS • Linux</text>
+</svg>

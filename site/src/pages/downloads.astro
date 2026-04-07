@@ -1,0 +1,233 @@
+---
+import SiteLayout from '../layouts/SiteLayout.astro';
+import { siteConfig } from '../data/site-config';
+import { loadReleaseManifest } from '../lib/release-manifest';
+
+const releaseManifest = loadReleaseManifest();
+const releaseNotes = releaseManifest?.notes ?? [
+  'The download manifest is temporarily unavailable, so the site is showing the safe fallback path to GitHub Releases.',
+  'If you need a build immediately, open the release page directly and verify the attached checksums before installing.',
+];
+const assets = releaseManifest?.assets ?? [];
+const primaryAsset =
+  assets.find((asset) => asset.platform === 'windows') ??
+  assets.find((asset) => asset.platform === 'macos') ??
+  assets[0] ??
+  null;
+---
+
+<SiteLayout
+  title={`Downloads | ${siteConfig.appName}`}
+  description={`Download the latest Windows, macOS, and Linux builds of ${siteConfig.appName}.`}
+>
+  <section class="panel">
+    <span class="eyebrow">Stable downloads</span>
+    <h2>
+      {releaseManifest
+        ? `Download ${siteConfig.appName} ${releaseManifest.version}`
+        : `Download ${siteConfig.appName}`}
+    </h2>
+    <p class="page-lead">
+      Public installers are hosted on GitHub Releases. The website reads a generated stable release
+      manifest so the version, checksums, and download buttons stay aligned with the shipped build.
+    </p>
+    <div class="chip-row">
+      <span class="chip">Stable channel only</span>
+      <span class="chip">Hosted on GitHub</span>
+      <span class="chip">SHA256 checksums</span>
+      {releaseManifest && <span class="chip">Released {releaseManifest.releaseDate}</span>}
+    </div>
+    <div class="button-row">
+      {primaryAsset ? (
+        <a
+          class="button-link button-link--primary"
+          href={primaryAsset.url}
+          target="_blank"
+          rel="noreferrer"
+        >
+          Download {primaryAsset.label}
+        </a>
+      ) : (
+        <a
+          class="button-link button-link--primary"
+          href={siteConfig.githubReleasesUrl}
+          target="_blank"
+          rel="noreferrer"
+        >
+          Open GitHub Releases
+        </a>
+      )}
+      <a
+        class="button-link"
+        href={releaseManifest?.links.release ?? siteConfig.githubReleasesUrl}
+        target="_blank"
+        rel="noreferrer"
+      >
+        Open stable release page
+      </a>
+    </div>
+    <p class="download-hint" id="download-hint">
+      {releaseManifest
+        ? 'Choose your platform below. The site can highlight a recommended download for the device you are using.'
+        : 'The stable manifest could not be read, so the site is linking directly to GitHub Releases as a safe fallback.'}
+    </p>
+
+    {releaseManifest ? (
+      <div class="download-grid">
+        {assets.map((asset) => (
+          <article class="download-card" data-download-card data-platform={asset.platform}>
+            <span class="chip">{asset.platform}</span>
+            <h3>{asset.label}</h3>
+            <p class="download-card__meta">
+              {asset.arch} · .{asset.format} · {asset.size}
+            </p>
+            <div class="button-row">
+              <a
+                class="button-link button-link--primary"
+                href={asset.url}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Download .{asset.format}
+              </a>
+              <a
+                class="button-link"
+                href={asset.checksumUrl}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Checksums
+              </a>
+            </div>
+            <p class="download-card__meta">
+              Published through GitHub Releases. Verify the SHA256 value below before installing if
+              you want to confirm file integrity.
+            </p>
+            <div class="checksum-block">
+              <strong>SHA256</strong>
+              <code>{asset.sha256 ?? 'See checksums.txt for the latest published hash.'}</code>
+            </div>
+          </article>
+        ))}
+      </div>
+    ) : (
+      <article class="download-card download-card--fallback">
+        <span class="chip">Fallback</span>
+        <h3>Downloads are still available</h3>
+        <p>
+          The site could not safely load the stable manifest, so it is intentionally falling back
+          to the public GitHub Releases page instead of showing stale or broken download buttons.
+        </p>
+        <div class="button-row">
+          <a
+            class="button-link button-link--primary"
+            href={siteConfig.githubReleasesUrl}
+            target="_blank"
+            rel="noreferrer"
+          >
+            View GitHub Releases
+          </a>
+          <a
+            class="button-link"
+            href={siteConfig.githubRepoUrl}
+            target="_blank"
+            rel="noreferrer"
+          >
+            Open repository
+          </a>
+        </div>
+      </article>
+    )}
+  </section>
+
+  <section class="panel">
+    <h2>Release details</h2>
+    <p class="page-lead">
+      The release manifest is the single source of truth for version, release date, minimum OS
+      support, and download URLs used by the public website.
+    </p>
+
+    {releaseManifest ? (
+      <>
+        <table class="release-table">
+          <tbody>
+            <tr>
+              <th>Version</th>
+              <td>{releaseManifest.version}</td>
+            </tr>
+            <tr>
+              <th>Channel</th>
+              <td>{releaseManifest.channel}</td>
+            </tr>
+            <tr>
+              <th>Release date</th>
+              <td>{releaseManifest.releaseDate}</td>
+            </tr>
+            <tr>
+              <th>Minimum OS</th>
+              <td>
+                Windows: {releaseManifest.minimumOs.windows}<br />
+                macOS: {releaseManifest.minimumOs.macos}<br />
+                Linux: {releaseManifest.minimumOs.linux}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="faq-list">
+          {releaseNotes.map((note) => (
+            <article class="download-card">
+              <p>{note}</p>
+            </article>
+          ))}
+        </div>
+        <div class="button-row">
+          <a
+            class="button-link"
+            href={releaseManifest.links.release}
+            target="_blank"
+            rel="noreferrer"
+          >
+            Open GitHub release
+          </a>
+          <a
+            class="button-link"
+            href={siteConfig.githubRepoUrl}
+            target="_blank"
+            rel="noreferrer"
+          >
+            Open repository
+          </a>
+        </div>
+      </>
+    ) : (
+      <div class="faq-list">
+        {releaseNotes.map((note) => (
+          <article class="download-card">
+            <p>{note}</p>
+          </article>
+        ))}
+      </div>
+    )}
+  </section>
+</SiteLayout>
+
+<script is:inline>
+  const cards = Array.from(document.querySelectorAll('[data-download-card]'));
+  const hint = document.getElementById('download-hint');
+  if (cards.length > 0 && hint) {
+    const platform = navigator.platform.toLowerCase();
+    const targetPlatform = platform.includes('mac')
+      ? 'macos'
+      : platform.includes('win')
+        ? 'windows'
+        : platform.includes('linux')
+          ? 'linux'
+          : '';
+
+    const recommendedCard = cards.find((card) => card.dataset.platform === targetPlatform);
+    if (recommendedCard) {
+      recommendedCard.classList.add('download-card--recommended');
+      hint.textContent = `We highlighted the recommended ${targetPlatform} download for this device.`;
+    }
+  }
+</script>

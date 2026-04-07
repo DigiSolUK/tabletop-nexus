@@ -1,0 +1,19 @@
+{
+  "version": "1.0.0",
+  "releaseDate": "2026-04-07",
+  "channel": "stable",
+  "minimumOs": {
+    "windows": "Windows 10",
+    "macos": "macOS 12",
+    "linux": "Ubuntu 22.04 / equivalent"
+  },
+  "notes": [
+    "No stable release artifact set has been generated yet, so the website should fall back to the GitHub Releases page.",
+    "Once a stable release is built and published, this manifest will be regenerated from the actual uploaded installer names and checksums."
+  ],
+  "assets": [],
+  "links": {
+    "website": "https://tabletopnexus.app",
+    "release": "https://github.com/DigiSolUK/tabletop-nexus/releases"
+  }
+}

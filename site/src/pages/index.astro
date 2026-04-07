@@ -1,0 +1,75 @@
+---
+import SiteLayout from '../layouts/SiteLayout.astro';
+import { featureGames, highlights } from '../data/catalogue';
+import { siteConfig } from '../data/site-config';
+import { loadReleaseManifest } from '../lib/release-manifest';
+
+const releaseManifest = loadReleaseManifest();
+const primaryDownloadLabel = releaseManifest
+  ? `Download v${releaseManifest.version}`
+  : 'View stable downloads';
+---
+
+<SiteLayout
+  title={`${siteConfig.appName} | Premium Desktop Tabletop Platform`}
+  description={`${siteConfig.appName} is a polished desktop gaming platform for offline board, card, and party play with local multiplayer, profiles, creator tools, mods, and downloadable builds.`}
+>
+  <section class="hero">
+    <div>
+      <span class="eyebrow">Offline-first desktop platform</span>
+      <h1>One premium hub for board, card, and party nights.</h1>
+      <p>
+        {siteConfig.appName} brings polished built-in classics, local multiplayer, AI-backed practice, profile-aware stats, hosted rooms, creator tools,
+        and downloadable desktop builds into one smooth tabletop lounge.
+      </p>
+      <div class="button-row">
+        <a class="button-link button-link--primary" href="/downloads">{primaryDownloadLabel}</a>
+        <a class="button-link" href="/games">Browse the game catalogue</a>
+      </div>
+      {releaseManifest ? (
+        <p class="hero-meta">
+          Latest stable release: v{releaseManifest.version} on {releaseManifest.releaseDate}. Installers stay hosted on GitHub Releases.
+        </p>
+      ) : (
+        <p class="hero-meta">
+          Download links are generated from the latest stable release manifest and fall back to GitHub Releases if the site cannot safely read it.
+        </p>
+      )}
+      <div class="chip-row">
+        <span class="chip">Windows</span>
+        <span class="chip">macOS</span>
+        <span class="chip">Linux</span>
+        <span class="chip">Offline play</span>
+        <span class="chip">Profile sync ready</span>
+      </div>
+    </div>
+    <div class="hero-art" aria-hidden="true"></div>
+  </section>
+
+  <section class="panel">
+    <span class="eyebrow">Why it lands</span>
+    <h2>Designed for casual pick-up play and long-term replayability.</h2>
+    <div class="card-grid">
+      {highlights.map((highlight) => (
+        <article class="download-card">
+          <h3>{highlight}</h3>
+          <p>Built with a launcher-style shell, reusable in-game chrome, and a clean path from quick match to deeper creator and stats tools.</p>
+        </article>
+      ))}
+    </div>
+  </section>
+
+  <section class="panel">
+    <span class="eyebrow">Featured games</span>
+    <h2>Launch-night favourites and strategy staples.</h2>
+    <div class="game-grid">
+      {featureGames.map((game) => (
+        <article class="download-card">
+          <span class="chip">{game.category}</span>
+          <h3>{game.name}</h3>
+          <p>{game.blurb}</p>
+        </article>
+      ))}
+    </div>
+  </section>
+</SiteLayout>

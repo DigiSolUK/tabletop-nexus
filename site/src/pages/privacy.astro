@@ -1,0 +1,37 @@
+---
+import SiteLayout from '../layouts/SiteLayout.astro';
+import { siteConfig } from '../data/site-config';
+---
+
+<SiteLayout
+  title={`Privacy | ${siteConfig.appName}`}
+  description={`Privacy summary for ${siteConfig.appName}.`}
+>
+  <section class="legal-card">
+    <span class="eyebrow">Privacy</span>
+    <h2>Privacy summary for the public indie release</h2>
+    <div class="legal-stack">
+      <p>
+        {siteConfig.appName} is designed to work offline. If you do not sign in, your profile,
+        saves, stats, and match history remain on your own device.
+      </p>
+      <p>
+        If you enable optional cloud sync, the app stores profile metadata, settings, save slots,
+        and match history needed to keep your account consistent across supported devices.
+      </p>
+      <p>
+        The public website may receive standard hosting, security, and analytics logs from the
+        platform used to deploy it. Download activity may also be logged by GitHub Releases when
+        you fetch installers or checksums.
+      </p>
+      <p>
+        We do not sell profile or gameplay data. If telemetry or crash reporting is introduced in a
+        later release, this page should be updated before that collection is enabled.
+      </p>
+      <p>
+        Contact {siteConfig.supportEmail} if you need help with account data, sync issues, or
+        privacy-related questions. Last updated: {siteConfig.legalLastUpdated}.
+      </p>
+    </div>
+  </section>
+</SiteLayout>

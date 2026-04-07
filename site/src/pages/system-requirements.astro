@@ -1,0 +1,25 @@
+---
+import SiteLayout from '../layouts/SiteLayout.astro';
+import { loadReleaseManifest } from '../lib/release-manifest';
+
+const releaseManifest = loadReleaseManifest();
+const minimumOs = releaseManifest?.minimumOs ?? {
+  windows: 'Windows 10',
+  macos: 'macOS 12',
+  linux: 'Ubuntu 22.04 / equivalent',
+};
+---
+
+<SiteLayout title="System Requirements | TableTop Nexus" description="Minimum platform requirements for TableTop Nexus.">
+  <section class="legal-card">
+    <span class="eyebrow">Compatibility</span>
+    <h2>System requirements</h2>
+    <div class="legal-stack">
+      <p><strong>Windows:</strong> {minimumOs.windows}, x64, 8 GB RAM recommended.</p>
+      <p><strong>macOS:</strong> {minimumOs.macos}, Apple Silicon or Intel, 8 GB RAM recommended.</p>
+      <p><strong>Linux:</strong> {minimumOs.linux}, modern Wayland/X11 desktop, 8 GB RAM recommended.</p>
+      <p><strong>Storage:</strong> 1.5 GB available space for the app, save data, and art packs.</p>
+      <p><strong>Networking:</strong> Optional. Only required for cloud sync, hosted rooms, or release downloads.</p>
+    </div>
+  </section>
+</SiteLayout>

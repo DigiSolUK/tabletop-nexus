@@ -1,0 +1,22 @@
+---
+import SiteLayout from '../../layouts/SiteLayout.astro';
+---
+
+<SiteLayout title="Auth Callback | TableTop Nexus" description="Desktop auth callback bridge for TableTop Nexus.">
+  <section class="legal-card">
+    <span class="eyebrow">Auth callback</span>
+    <h2>Handing this sign-in back to TableTop Nexus</h2>
+    <p id="callback-status">If the app is installed, this page will try to reopen TableTop Nexus and pass the auth response back to the desktop client.</p>
+  </section>
+  <script>
+    const status = document.getElementById('callback-status');
+    const query = window.location.search ? window.location.search.slice(1) : '';
+    const hash = window.location.hash ? window.location.hash.slice(1) : '';
+    const serialized = [query, hash].filter(Boolean).join('&');
+    const redirect = `tabletopnexus://auth/callback${serialized ? `?${serialized}` : ''}`;
+    if (status) {
+      status.textContent = 'Attempting to reopen TableTop Nexus...';
+    }
+    window.location.href = redirect;
+  </script>
+</SiteLayout>

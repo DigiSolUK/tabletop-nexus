@@ -1,0 +1,39 @@
+---
+import SiteLayout from '../layouts/SiteLayout.astro';
+import { siteConfig } from '../data/site-config';
+---
+
+<SiteLayout
+  title={`Terms | ${siteConfig.appName}`}
+  description={`Terms and release conditions for ${siteConfig.appName}.`}
+>
+  <section class="legal-card">
+    <span class="eyebrow">Terms</span>
+    <h2>Release conditions summary</h2>
+    <div class="legal-stack">
+      <p>
+        {siteConfig.appName} is distributed as downloadable desktop software. You may install and
+        use the published builds subject to the repository license and any packaged third-party
+        license notices.
+      </p>
+      <p>
+        Mods, creator content, and exported files remain your responsibility. Do not upload content
+        you do not have the right to distribute.
+      </p>
+      <p>
+        The software is provided on an as-is basis unless a separate commercial support or warranty
+        policy is published for a specific build or customer agreement.
+      </p>
+      <p>
+        You must not remove attribution, bundled license notices, or platform security warnings
+        from redistributed packages. If you share installers, link back to the official release
+        page so users can verify checksums and release notes.
+      </p>
+      <p>
+        These summary terms are intended for the current public indie release. If the product
+        distribution model changes materially, {siteConfig.companyName} may publish updated formal
+        terms. Last updated: {siteConfig.legalLastUpdated}.
+      </p>
+    </div>
+  </section>
+</SiteLayout>

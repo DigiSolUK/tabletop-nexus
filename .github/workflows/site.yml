@@ -1,0 +1,38 @@
+name: Deploy Site
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - 'site/**'
+      - '.github/workflows/site.yml'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      HAS_CLOUDFLARE: ${{ secrets.CLOUDFLARE_API_TOKEN != '' && secrets.CLOUDFLARE_ACCOUNT_ID != '' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm --prefix site ci
+      - run: npm run site:build
+        env:
+          PUBLIC_SITE_URL: https://tabletopnexus.app
+          PUBLIC_GITHUB_REPO_URL: https://github.com/DigiSolUK/tabletop-nexus
+          PUBLIC_GITHUB_ISSUES_URL: https://github.com/DigiSolUK/tabletop-nexus/issues
+          PUBLIC_SUPPORT_EMAIL: support@tabletopnexus.app
+      - if: ${{ env.HAS_CLOUDFLARE != 'true' }}
+        run: echo "Cloudflare secrets are not configured, so site deployment is being skipped."
+      - if: ${{ env.HAS_CLOUDFLARE == 'true' }}
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy site/dist --project-name tabletop-nexus

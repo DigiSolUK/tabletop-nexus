@@ -1,0 +1,26 @@
+---
+import SiteLayout from '../layouts/SiteLayout.astro';
+
+const faqs = [
+  ['Do I need an account?', 'No. The desktop app remains offline-first. Online sign-in is optional and is used for cloud-ready saves and sync.'],
+  ['Can I play without internet?', 'Yes. Built-in games, local multiplayer, saves, tutorials, and stats all work locally.'],
+  ['Will people see the whole source code when they download it?', 'No casual user will need access to the project source to use the app. The app ships as packaged installers, but desktop JavaScript can never be made perfectly unrecoverable.'],
+  ['How are party rooms handled?', 'Party rooms are host-authoritative and intended for local/direct sessions rather than a cloud matchmaking backend.'],
+  ['How do I verify a download?', 'Each stable release publishes a checksums.txt file alongside the installers on GitHub Releases. Compare the SHA256 value on the downloads page or in the checksums file with the file you downloaded.'],
+];
+---
+
+<SiteLayout title="FAQ | TableTop Nexus" description="Answers about installation, offline play, profiles, and desktop distribution.">
+  <section class="panel">
+    <span class="eyebrow">FAQ</span>
+    <h2>Common questions before download.</h2>
+    <div class="faq-list">
+      {faqs.map(([question, answer]) => (
+        <article class="download-card">
+          <h3>{question}</h3>
+          <p>{answer}</p>
+        </article>
+      ))}
+    </div>
+  </section>
+</SiteLayout>

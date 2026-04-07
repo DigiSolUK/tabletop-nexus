@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="TableTop Nexus">
+  <defs>
+    <linearGradient id="bg" x1="0%" x2="100%" y1="0%" y2="100%">
+      <stop offset="0%" stop-color="#22d3ee" />
+      <stop offset="100%" stop-color="#0f766e" />
+    </linearGradient>
+  </defs>
+  <rect width="128" height="128" rx="28" fill="#08111d" />
+  <rect x="14" y="14" width="100" height="100" rx="24" fill="url(#bg)" opacity="0.2" />
+  <path d="M33 40h62v12H70v37H58V52H33z" fill="#eff6ff" />
+  <circle cx="93" cy="91" r="10" fill="#f59e0b" />
+</svg>

@@ -1,0 +1,21 @@
+---
+import SiteLayout from '../layouts/SiteLayout.astro';
+import { featureGames } from '../data/catalogue';
+---
+
+<SiteLayout title="Games | TableTop Nexus" description="Explore the board, card, and party games included in TableTop Nexus.">
+  <section class="panel">
+    <span class="eyebrow">Catalogue</span>
+    <h2>Built-in games across three moods.</h2>
+    <p class="page-lead">TableTop Nexus launches with a curated mix of strategy classics, card tables, and couch-friendly party formats.</p>
+    <div class="game-grid">
+      {featureGames.map((game) => (
+        <article class="download-card">
+          <span class="chip">{game.category}</span>
+          <h3>{game.name}</h3>
+          <p>{game.blurb}</p>
+        </article>
+      ))}
+    </div>
+  </section>
+</SiteLayout>
