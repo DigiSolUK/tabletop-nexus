@@ -14,6 +14,9 @@ on:
 permissions:
   contents: write
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   build-desktop:
     strategy:
@@ -27,7 +30,7 @@ jobs:
           ref: ${{ github.event.inputs.release_tag || github.ref }}
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
           cache: npm
       - run: npm ci
       - run: npm run lint
@@ -51,7 +54,7 @@ jobs:
           ref: ${{ github.event.inputs.release_tag || github.ref }}
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
           cache: npm
       - run: npm ci
       - uses: actions/download-artifact@v4
