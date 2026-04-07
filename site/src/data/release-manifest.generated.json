@@ -1,5 +1,5 @@
 {
-  "version": "1.0.2",
+  "version": "1.0.3",
   "releaseDate": "2026-04-07",
   "channel": "stable",
   "minimumOs": {
@@ -17,44 +17,44 @@
       "label": "Windows Installer",
       "arch": "x64",
       "format": "exe",
-      "url": "https://github.com/DigiSolUK/tabletop-nexus/releases/download/v1.0.2/TableTop.Nexus-1.0.2.Setup.exe",
-      "checksumUrl": "https://github.com/DigiSolUK/tabletop-nexus/releases/download/v1.0.2/checksums.txt",
-      "size": "131.9 MB",
-      "sha256": "6747079cdc688b4f06bb668727c74eec0763583bb0fa500ef40fa0913a871b06"
+      "url": "https://github.com/DigiSolUK/tabletop-nexus/releases/download/v1.0.3/TableTop.Nexus-1.0.3.Setup.exe",
+      "checksumUrl": "https://github.com/DigiSolUK/tabletop-nexus/releases/download/v1.0.3/checksums.txt",
+      "size": "132.3 MB",
+      "sha256": "cedf0db38085545e11c60ce628aa58d357c86ca4fec7de4b20ff5103a541b0e4"
     },
     {
       "platform": "macos",
       "label": "macOS Build",
       "arch": "arm64",
       "format": "zip",
-      "url": "https://github.com/DigiSolUK/tabletop-nexus/releases/download/v1.0.2/TableTop.Nexus-darwin-arm64-1.0.2.zip",
-      "checksumUrl": "https://github.com/DigiSolUK/tabletop-nexus/releases/download/v1.0.2/checksums.txt",
-      "size": "109.2 MB",
-      "sha256": "ce223295ed6a72e8c51c4e4fd049aae666573fb399d2168905d651dfb367d60e"
+      "url": "https://github.com/DigiSolUK/tabletop-nexus/releases/download/v1.0.3/TableTop.Nexus-darwin-arm64-1.0.3.zip",
+      "checksumUrl": "https://github.com/DigiSolUK/tabletop-nexus/releases/download/v1.0.3/checksums.txt",
+      "size": "109.6 MB",
+      "sha256": "9e4eb0b483c595b7db1de8b91a4de4ea1ac47cebdb82cdaa416aedaba31bbc1c"
     },
     {
       "platform": "linux",
       "label": "Linux DEB Package",
       "arch": "x64",
       "format": "deb",
-      "url": "https://github.com/DigiSolUK/tabletop-nexus/releases/download/v1.0.2/tabletop-nexus_1.0.2_amd64.deb",
-      "checksumUrl": "https://github.com/DigiSolUK/tabletop-nexus/releases/download/v1.0.2/checksums.txt",
-      "size": "85.9 MB",
-      "sha256": "04997e234182abf66ad6fbc6166f97f5d7c86eaf4437bd39065888cbd38ced99"
+      "url": "https://github.com/DigiSolUK/tabletop-nexus/releases/download/v1.0.3/tabletop-nexus_1.0.3_amd64.deb",
+      "checksumUrl": "https://github.com/DigiSolUK/tabletop-nexus/releases/download/v1.0.3/checksums.txt",
+      "size": "86.2 MB",
+      "sha256": "a594623dc9b4f09f9dec94244c6ec58061e5f471cd822f7a2d0c335966e92ee9"
     },
     {
       "platform": "linux",
       "label": "Linux RPM Package",
       "arch": "x64",
       "format": "rpm",
-      "url": "https://github.com/DigiSolUK/tabletop-nexus/releases/download/v1.0.2/tabletop-nexus-1.0.2-1.x86_64.rpm",
-      "checksumUrl": "https://github.com/DigiSolUK/tabletop-nexus/releases/download/v1.0.2/checksums.txt",
-      "size": "90.0 MB",
-      "sha256": "a73174aba75de22bb5e270fc239ccd4e5605976a89304cd26d55b2b62dd4e0ba"
+      "url": "https://github.com/DigiSolUK/tabletop-nexus/releases/download/v1.0.3/tabletop-nexus-1.0.3-1.x86_64.rpm",
+      "checksumUrl": "https://github.com/DigiSolUK/tabletop-nexus/releases/download/v1.0.3/checksums.txt",
+      "size": "90.2 MB",
+      "sha256": "923a91efb9e8c1176f25655abeb5ccff2d0c3e80d6c6c7ffc6d90817358d6211"
     }
   ],
   "links": {
     "website": "https://digisoluk.github.io/tabletop-nexus/",
-    "release": "https://github.com/DigiSolUK/tabletop-nexus/releases/tag/v1.0.2"
+    "release": "https://github.com/DigiSolUK/tabletop-nexus/releases/tag/v1.0.3"
   }
 }
