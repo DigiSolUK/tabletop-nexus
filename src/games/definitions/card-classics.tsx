@@ -1,4 +1,4 @@
-import { createCommand, type GameBundle } from '../core/engine';
+import { createCommand, createRuntimeId, nextSeed, type GameBundle } from '../core/engine';
 import { dealHands, evaluateBestHoldemHand, formatCard, type StandardCard, type StandardSuit } from '../core/cards';
 import { manifestById } from '../core/catalogue';
 import { tutorialsById } from '../core/tutorials';
@@ -27,6 +27,11 @@ interface HoldemState {
   drawPile: StandardCard[];
   community: StandardCard[];
   stage: HoldemStage;
+  showdownWinnerIds: string[];
+  session: {
+    handsPlayed: number;
+    handsWon: number;
+  };
 }
 
 const nextPlayer = (setup: MatchSetup, playerId: string) =>
@@ -130,6 +135,18 @@ const holdemStatus = (state: HoldemState, setup: MatchSetup): MatchStatus => {
     };
   }
   return activeStatus(`Advance the board from ${state.stage} to the next street.`, setup.players[0]?.id ?? null);
+};
+
+const resolveHoldemWinnerIds = (state: HoldemState, setup: MatchSetup) => {
+  const rankings = setup.players.map((player) => ({
+    playerId: player.id,
+    hand: evaluateBestHoldemHand([...state.community, ...state.hands[player.id]]),
+  }));
+  rankings.sort((left, right) => right.hand.category - left.hand.category);
+  const best = rankings[0];
+  return rankings
+    .filter((entry) => entry.hand.category === best.hand.category && entry.hand.values.join(',') === best.hand.values.join(','))
+    .map((entry) => entry.playerId);
 };
 
 export const heartsBundle: GameBundle<HeartsState> = {
@@ -368,13 +385,18 @@ export const crazyEightsBundle: GameBundle<CrazyEightsState> = {
   },
 };
 
-const holdemRound = (setup: MatchSetup) => {
-  const deal = dealHands(setup.players.map((player) => player.id), 2, setup.seed + Date.now());
+const holdemRound = (setup: MatchSetup, session?: HoldemState['session']) => {
+  const deal = dealHands(setup.players.map((player) => player.id), 2, setup.seed);
   return {
     hands: Object.fromEntries(setup.players.map((player) => [player.id, deal.hands[player.id]])),
     drawPile: deal.deck,
     community: [] as StandardCard[],
     stage: 'preflop' as HoldemStage,
+    showdownWinnerIds: [],
+    session: session ?? {
+      handsPlayed: 0,
+      handsWon: 0,
+    },
   };
 };
 
@@ -385,10 +407,6 @@ export const texasHoldemBundle: GameBundle<HoldemState> = {
     createInitialState: (setup) => holdemRound(setup),
     getStatus: holdemStatus,
     applyCommand: (state, setup, command) => {
-      if (command.type === 'new-round') {
-        const nextState = holdemRound(setup);
-        return { state: nextState, status: holdemStatus(nextState, setup) };
-      }
       if (command.type !== 'advance' || state.stage === 'showdown') {
         return { state, status: holdemStatus(state, setup) };
       }
@@ -404,13 +422,55 @@ export const texasHoldemBundle: GameBundle<HoldemState> = {
             : state.stage === 'turn'
               ? 'river'
               : 'showdown';
-      const nextState = {
+      const nextStateBase = {
         ...state,
         drawPile,
         community: [...state.community, ...reveal],
         stage,
       };
+      const nextState =
+        stage === 'showdown'
+          ? {
+              ...nextStateBase,
+              showdownWinnerIds: resolveHoldemWinnerIds(nextStateBase, setup),
+              session: {
+                handsPlayed: state.session.handsPlayed + 1,
+                handsWon:
+                  state.session.handsWon +
+                  (resolveHoldemWinnerIds(nextStateBase, setup).includes(setup.players[0]?.id ?? '') ? 1 : 0),
+              },
+            }
+          : nextStateBase;
       return { state: nextState, status: holdemStatus(nextState, setup) };
+    },
+    getSessionStats: (state) => state.session,
+    createReplaySnapshot: (snapshot) => {
+      const nextRound = nextSeed(snapshot.roundSeed);
+      const setup = {
+        ...snapshot.setup,
+        id: createRuntimeId('holdem'),
+        tutorialEnabled: false,
+        seed: nextRound.seed,
+      };
+      const previousState = snapshot.state as HoldemState;
+      const state = holdemRound(setup, previousState.session);
+      const status = holdemStatus(state, setup);
+      return {
+        ...snapshot,
+        id: setup.id,
+        setup,
+        state,
+        history: [],
+        status: {
+          ...status,
+          rematchLabel: 'Next Hand',
+        },
+        roundIndex: snapshot.roundIndex + 1,
+        roundSeed: nextRound.seed,
+        sessionStats: state.session,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
     },
     getMetrics: (state) => ({
       communityCards: state.community.length,
@@ -463,11 +523,7 @@ export const texasHoldemBundle: GameBundle<HoldemState> = {
             <button type="button" className="primary-button" onClick={() => dispatch(createCommand(snapshot.setup.players[0].id, 'advance', {}))}>
               Reveal next street
             </button>
-          ) : (
-            <button type="button" className="primary-button" onClick={() => dispatch(createCommand(snapshot.setup.players[0].id, 'new-round', {}))}>
-              Start new round
-            </button>
-          )}
+          ) : null}
         </div>
       </div>
     );

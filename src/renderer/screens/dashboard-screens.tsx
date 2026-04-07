@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
-import type { MatchSetup } from '../../shared/contracts';
 import { gameBackdropStyle } from '../app/game-art';
-import { buildPlayerSeats, useAppState } from '../state/app-state';
+import { buildMatchSetup, buildPlayerSeats, useAppState } from '../state/app-state';
 
 const formatDuration = (seconds: number) => {
   const mins = Math.floor(seconds / 60);
@@ -238,18 +237,14 @@ export const GameSetupScreen = () => {
       navigate('/party');
       return;
     }
-    const setup: MatchSetup = {
-      id: globalThis.crypto?.randomUUID?.() ?? `${Date.now()}`,
-      gameId: game.id,
+    const setup = buildMatchSetup(
+      game.id,
       mode,
       players,
       aiDifficulty,
       tutorialEnabled,
-      timerSeconds: timerSeconds || undefined,
-      themeId: 'default',
-      seed: Date.now(),
-      ruleVariants: {},
-    };
+      timerSeconds || undefined
+    );
     startMatch(setup);
     navigate(`/play/${game.id}`);
   };

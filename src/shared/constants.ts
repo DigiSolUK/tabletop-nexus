@@ -6,6 +6,7 @@ import type {
   ProfileSummary,
   SyncStatus,
   StatsSummary,
+  UpdateStatus,
 } from './contracts';
 
 export const APP_NAME = 'TableTop Nexus';
@@ -82,6 +83,19 @@ export const activeStatus = (message: string, currentPlayerId: string | null): M
   winnerIds: [],
   isDraw: false,
   canSave: true,
+  canRematch: false,
+  rematchLabel: null,
+});
+
+export const defaultUpdateStatus = (currentVersion: string): UpdateStatus => ({
+  currentVersion,
+  latestVersion: null,
+  available: false,
+  releaseUrl: null,
+  downloadUrl: null,
+  checkedAt: null,
+  dismissed: false,
+  error: null,
 });
 
 export const creatorTemplates: CreatorTemplate[] = [

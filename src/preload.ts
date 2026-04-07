@@ -23,6 +23,8 @@ const desktopAPI: DesktopAPI = {
   signOut: createInvoker<[], Awaited<ReturnType<DesktopAPI['signOut']>>>('desktop:signOut'),
   syncNow: createInvoker<[], Awaited<ReturnType<DesktopAPI['syncNow']>>>('desktop:syncNow'),
   uploadAvatar: createInvoker<[], Awaited<ReturnType<DesktopAPI['uploadAvatar']>>>('desktop:uploadAvatar'),
+  checkForAppUpdate: createInvoker<[], Awaited<ReturnType<DesktopAPI['checkForAppUpdate']>>>('desktop:checkForAppUpdate'),
+  dismissUpdateNotice: createInvoker<[], Awaited<ReturnType<DesktopAPI['dismissUpdateNotice']>>>('desktop:dismissUpdateNotice'),
   getActiveMatch: createInvoker<[], Awaited<ReturnType<DesktopAPI['getActiveMatch']>>>('desktop:getActiveMatch'),
   saveActiveMatch: createInvoker<
     [Parameters<DesktopAPI['saveActiveMatch']>[0]],

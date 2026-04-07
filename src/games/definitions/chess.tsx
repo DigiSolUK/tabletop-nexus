@@ -29,7 +29,16 @@ const pieceGlyph: Record<string, string> = {
   bk: '♚',
 };
 
-const currentPlayerId = (game: Chess, setup: MatchSetup) => (game.turn() === 'w' ? setup.players[0]?.id : setup.players[1]?.id) ?? null;
+const deterministicIndex = (value: string, length: number) => {
+  let hash = 0;
+  for (const char of value) {
+    hash = (hash * 31 + char.charCodeAt(0)) >>> 0;
+  }
+  return length === 0 ? 0 : hash % length;
+};
+
+const currentPlayerId = (game: Chess, setup: MatchSetup) =>
+  (game.turn() === 'w' ? setup.players[0]?.id : setup.players[1]?.id) ?? null;
 
 const statusForGame = (game: Chess, setup: MatchSetup): MatchStatus => {
   if (game.isCheckmate()) {
@@ -107,7 +116,7 @@ export const chessBundle: GameBundle<ChessState> = {
           probe.move(move);
           return probe.inCheck();
         }) ??
-        moves[Math.floor(Math.random() * moves.length)];
+        moves[deterministicIndex(state.fen, moves.length)];
       return createCommand(currentPlayerId(game, setup) ?? '', 'move', {
         from: preferred.from,
         to: preferred.to,
@@ -164,9 +173,7 @@ export const chessBundle: GameBundle<ChessState> = {
         </div>
         <div className="surface-panel surface-panel--compact">
           <h4>Move log</h4>
-          <div className="move-log">
-            {snapshot.state.moveHistory.length > 0 ? snapshot.state.moveHistory.join(' ') : 'No moves yet'}
-          </div>
+          <div className="move-log">{snapshot.state.moveHistory.length > 0 ? snapshot.state.moveHistory.join(' ') : 'No moves yet'}</div>
         </div>
       </div>
     );

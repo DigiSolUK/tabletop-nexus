@@ -11,6 +11,7 @@ import { ExportService } from './export/export-service';
 import { PartyRoomService } from './party/party-service';
 import { AppDatabase } from './persistence/database';
 import { SyncService } from './sync/sync-service';
+import { UpdateService } from './update/update-service';
 
 export interface MainServices {
   database: AppDatabase;
@@ -18,6 +19,7 @@ export interface MainServices {
   partyService: PartyRoomService;
   authService: AuthService;
   syncService: SyncService;
+  updateService: UpdateService;
 }
 
 export const createMainServices = (app: App): MainServices => {
@@ -26,24 +28,33 @@ export const createMainServices = (app: App): MainServices => {
   const partyService = new PartyRoomService();
   const authService = new AuthService(app, database);
   const syncService = new SyncService(database, authService);
-  return { database, exportService, partyService, authService, syncService };
+  const updateService = new UpdateService();
+  return { database, exportService, partyService, authService, syncService, updateService };
 };
 
 export const registerDesktopHandlers = (app: App, services: MainServices): void => {
   const handlers: DesktopAPI = {
-    bootstrap: async () => services.database.getBootstrap(app.getVersion()),
+    bootstrap: async () => ({
+      ...services.database.getBootstrap(app.getVersion()),
+      updateStatus: await services.updateService.getStatus(app.getVersion()),
+    }),
     saveSettings: async (settings) => services.database.saveSettings(settings),
     saveProfile: async (profile) => services.database.saveProfile(profile),
     listProfiles: async () => services.database.listProfiles(),
     switchProfile: async (profileId) => {
       services.database.switchProfile(profileId);
-      return services.database.getBootstrap(app.getVersion());
+      return {
+        ...services.database.getBootstrap(app.getVersion()),
+        updateStatus: await services.updateService.getStatus(app.getVersion()),
+      };
     },
     beginAuth: async (request) => services.authService.beginAuth(request),
     completeAuth: async (callbackUrl) => services.authService.completeAuth(callbackUrl),
     signOut: async () => services.authService.signOut(),
     syncNow: async () => services.syncService.syncNow(),
     uploadAvatar: async () => uploadAvatar(app, services),
+    checkForAppUpdate: async () => services.updateService.refresh(app.getVersion()),
+    dismissUpdateNotice: async () => services.updateService.dismiss(app.getVersion()),
     getActiveMatch: async () => services.database.getActiveMatch(),
     saveActiveMatch: async (snapshot) => services.database.saveActiveMatch(snapshot),
     clearActiveMatch: async () => services.database.clearActiveMatch(),

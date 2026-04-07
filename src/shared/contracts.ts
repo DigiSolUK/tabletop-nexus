@@ -8,11 +8,13 @@ export type PackageType = 'mod' | 'custom-game';
 export type ProfileAuthState = 'guest' | 'offline' | 'pending' | 'authenticated' | 'error' | 'unconfigured';
 export type SyncPhase = 'idle' | 'disabled' | 'syncing' | 'success' | 'conflict' | 'error';
 export type MatchOutcome = 'win' | 'loss' | 'draw' | 'complete';
+export type RoundMode = 'single-match' | 'session-rounds';
 
 export interface GameManifest {
   id: string;
   name: string;
   category: GameCategory;
+  roundMode: RoundMode;
   shortDescription: string;
   description: string;
   playerCount: [number, number];
@@ -74,7 +76,12 @@ export interface MatchStatus {
   winnerIds: string[];
   isDraw: boolean;
   canSave: boolean;
+  canRematch?: boolean;
+  rematchLabel?: string | null;
 }
+
+export type MatchStatusInput = Omit<MatchStatus, 'canRematch' | 'rematchLabel'> &
+  Partial<Pick<MatchStatus, 'canRematch' | 'rematchLabel'>>;
 
 export interface MatchSnapshot<TState = unknown> {
   schemaVersion: number;
@@ -84,6 +91,9 @@ export interface MatchSnapshot<TState = unknown> {
   state: TState;
   history: ReplayEvent[];
   status: MatchStatus;
+  roundIndex: number;
+  roundSeed: number;
+  sessionStats?: Record<string, number>;
   createdAt: string;
   updatedAt: string;
 }
@@ -347,6 +357,7 @@ export interface BootstrapPayload {
   auth: AuthSessionState;
   syncStatus: SyncStatus;
   activeMatch: MatchSnapshot | null;
+  updateStatus: UpdateStatus;
 }
 
 export interface ReleaseAsset {
@@ -357,11 +368,13 @@ export interface ReleaseAsset {
   url: string;
   checksumUrl: string;
   size: string;
+  sha256?: string;
 }
 
 export interface ReleaseManifest {
   version: string;
   releaseDate: string;
+  channel?: 'stable';
   minimumOs: {
     windows: string;
     macos: string;
@@ -369,4 +382,19 @@ export interface ReleaseManifest {
   };
   notes: string[];
   assets: ReleaseAsset[];
+  links?: {
+    website?: string;
+    release?: string;
+  };
+}
+
+export interface UpdateStatus {
+  currentVersion: string;
+  latestVersion: string | null;
+  available: boolean;
+  releaseUrl: string | null;
+  downloadUrl: string | null;
+  checkedAt: string | null;
+  dismissed: boolean;
+  error: string | null;
 }

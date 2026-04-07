@@ -1,6 +1,6 @@
 import type { GameManifest } from '../../shared/contracts';
 
-export const allGameManifests: GameManifest[] = [
+const rawGameManifests: Omit<GameManifest, 'roundMode'>[] = [
   {
     id: 'tic-tac-toe',
     name: 'Tic Tac Toe',
@@ -272,5 +272,12 @@ export const allGameManifests: GameManifest[] = [
     launchTier: 'milestone2',
   },
 ];
+
+const sessionRoundIds = new Set(['blackjack', 'texas-holdem']);
+
+export const allGameManifests: GameManifest[] = rawGameManifests.map((manifest) => ({
+  ...manifest,
+  roundMode: sessionRoundIds.has(manifest.id) ? 'session-rounds' : 'single-match',
+}));
 
 export const manifestById = Object.fromEntries(allGameManifests.map((manifest) => [manifest.id, manifest]));

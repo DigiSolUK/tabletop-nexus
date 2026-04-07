@@ -9,6 +9,7 @@ interface LudoState {
   currentPlayerId: string;
   lastRoll: number | null;
   awaitingMove: boolean;
+  seed: number;
 }
 
 interface BackgammonState {
@@ -58,6 +59,7 @@ export const ludoBundle: GameBundle<LudoState> = {
       currentPlayerId: setup.players[0]?.id ?? 'player-1',
       lastRoll: null,
       awaitingMove: false,
+      seed: setup.seed,
     }),
     getStatus: ludoStatus,
     applyCommand: (state, setup, command) => {
@@ -69,7 +71,8 @@ export const ludoBundle: GameBundle<LudoState> = {
         if (state.awaitingMove) {
           return { state, status: ludoStatus(state, setup) };
         }
-        const roll = Number(command.payload.value);
+        const rolled = rollDie(state.seed);
+        const roll = rolled.value;
         const currentPosition = state.positions[command.playerId];
         const canMove =
           (currentPosition === -1 && roll === 6) ||
@@ -77,13 +80,14 @@ export const ludoBundle: GameBundle<LudoState> = {
         if (!canMove) {
           const nextState = {
             ...state,
+            seed: rolled.seed,
             lastRoll: roll,
             awaitingMove: false,
             currentPlayerId: nextSeat(setup, command.playerId),
           };
           return { state: nextState, status: ludoStatus(nextState, setup) };
         }
-        const nextState = { ...state, lastRoll: roll, awaitingMove: true };
+        const nextState = { ...state, seed: rolled.seed, lastRoll: roll, awaitingMove: true };
         return { state: nextState, status: ludoStatus(nextState, setup) };
       }
 
@@ -106,6 +110,7 @@ export const ludoBundle: GameBundle<LudoState> = {
         currentPlayerId: extraTurn ? command.playerId : nextSeat(setup, command.playerId),
         lastRoll: null,
         awaitingMove: false,
+        seed: state.seed,
       };
       return { state: nextState, status: ludoStatus(nextState, setup) };
     },
@@ -114,7 +119,7 @@ export const ludoBundle: GameBundle<LudoState> = {
     }),
     createAiCommand: (state) => {
       if (!state.awaitingMove) {
-        return createCommand(state.currentPlayerId, 'roll', { value: Math.floor(Math.random() * 6) + 1 });
+        return createCommand(state.currentPlayerId, 'roll', {});
       }
       return createCommand(state.currentPlayerId, 'move', {});
     },
@@ -151,7 +156,7 @@ export const ludoBundle: GameBundle<LudoState> = {
             <button
               type="button"
               className="primary-button"
-              onClick={() => dispatch(createCommand(snapshot.status.currentPlayerId ?? '', 'roll', { value: Math.floor(Math.random() * 6) + 1 }))}
+              onClick={() => dispatch(createCommand(snapshot.status.currentPlayerId ?? '', 'roll', {}))}
               disabled={snapshot.status.phase === 'complete'}
             >
               Roll die

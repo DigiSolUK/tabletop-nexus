@@ -20,6 +20,7 @@ import {
   defaultProfile,
   defaultSettings,
   defaultSyncStatus,
+  defaultUpdateStatus,
   emptyStats,
 } from '../../shared/constants';
 
@@ -244,13 +245,14 @@ export class AppDatabase {
       customPackages: this.getCustomPackages(),
       tutorialsSeen: this.getTutorialsSeen(profile.id),
       releaseNotes: [
-        'Profiles now support offline and cloud-ready identity state, avatar assets, switchable local players, and sync status tracking.',
-        'TableTop Nexus can now restore the active match after navigation or relaunch, reducing dropped sessions during play.',
-        'Public release support now includes website-ready release metadata, stronger packaging hardening, and marketing-site scaffolding.',
+        'Finished games now surface a shared rematch flow, so replay starts a fresh seeded round instead of recycling stale state.',
+        'The desktop shell now uses a premium tech-table visual system with local Space Grotesk and IBM Plex Sans fonts, sharper HUD chrome, and richer board materials.',
+        'This build adds in-app stable update awareness for future releases, so players can jump straight to the latest installer when a newer version ships.',
       ],
       auth: this.getAuthState(),
       syncStatus: this.getSyncStatus(profile.id),
       activeMatch: this.getActiveMatch(),
+      updateStatus: defaultUpdateStatus(version),
     };
   }
 

@@ -1,4 +1,4 @@
-import { createCommand, shuffleWithSeed, type GameBundle } from '../core/engine';
+import { createCommand, createRuntimeId, nextSeed, shuffleWithSeed, type GameBundle } from '../core/engine';
 import { manifestById } from '../core/catalogue';
 import { tutorialsById } from '../core/tutorials';
 import { activeStatus } from '../../shared/constants';
@@ -16,6 +16,13 @@ interface BlackjackState {
   dealerHand: Card[];
   roundOver: boolean;
   chipDelta: number;
+  session: {
+    handsPlayed: number;
+    wins: number;
+    losses: number;
+    pushes: number;
+    netChipDelta: number;
+  };
 }
 
 const suits = ['Spades', 'Hearts', 'Clubs', 'Diamonds'];
@@ -52,6 +59,45 @@ const draw = (state: BlackjackState, count: number) => {
   };
 };
 
+const createRound = (setup: MatchSetup, session?: BlackjackState['session']): BlackjackState => {
+  const shuffled = shuffleWithSeed(createDeck(), setup.seed);
+  const firstState: BlackjackState = {
+    deck: shuffled.items,
+    playerHand: [],
+    dealerHand: [],
+    roundOver: false,
+    chipDelta: 0,
+    session: session ?? {
+      handsPlayed: 0,
+      wins: 0,
+      losses: 0,
+      pushes: 0,
+      netChipDelta: 0,
+    },
+  };
+  const playerDraw = draw(firstState, 2);
+  const dealerDraw = draw({ ...firstState, deck: playerDraw.deck }, 2);
+  return {
+    ...firstState,
+    deck: dealerDraw.deck,
+    playerHand: playerDraw.cards,
+    dealerHand: dealerDraw.cards,
+  };
+};
+
+const withSessionResult = (state: BlackjackState, chipDelta: number): BlackjackState => ({
+  ...state,
+  chipDelta,
+  roundOver: true,
+  session: {
+    handsPlayed: state.session.handsPlayed + 1,
+    wins: state.session.wins + (chipDelta > 0 ? 1 : 0),
+    losses: state.session.losses + (chipDelta < 0 ? 1 : 0),
+    pushes: state.session.pushes + (chipDelta === 0 ? 1 : 0),
+    netChipDelta: state.session.netChipDelta + chipDelta,
+  },
+});
+
 const getStatus = (state: BlackjackState, setup: MatchSetup): MatchStatus => {
   if (!state.roundOver) {
     return activeStatus(
@@ -83,27 +129,9 @@ export const blackjackBundle: GameBundle<BlackjackState> = {
   definition: {
     manifest: manifestById.blackjack,
     tutorial: tutorialsById['tutorial-blackjack'],
-    createInitialState: (setup) => {
-      const shuffled = shuffleWithSeed(createDeck(), setup.seed);
-      const firstState: BlackjackState = { deck: shuffled.items, playerHand: [], dealerHand: [], roundOver: false, chipDelta: 0 };
-      const playerDraw = draw(firstState, 2);
-      const dealerDraw = draw({ ...firstState, deck: playerDraw.deck }, 2);
-      return {
-        deck: dealerDraw.deck,
-        playerHand: playerDraw.cards,
-        dealerHand: dealerDraw.cards,
-        roundOver: false,
-        chipDelta: 0,
-      };
-    },
+    createInitialState: (setup) => createRound(setup),
     getStatus,
     applyCommand: (state, setup, command) => {
-      if (command.type === 'reset') {
-        return {
-          state: blackjackBundle.definition.createInitialState(setup),
-          status: getStatus(blackjackBundle.definition.createInitialState(setup), setup),
-        };
-      }
       if (state.roundOver) {
         return { state, status: getStatus(state, setup) };
       }
@@ -115,7 +143,7 @@ export const blackjackBundle: GameBundle<BlackjackState> = {
           playerHand: [...state.playerHand, ...nextDraw.cards],
         };
         const busted = handValue(nextState.playerHand) > 21;
-        const finalState = { ...nextState, roundOver: busted, chipDelta: busted ? -10 : state.chipDelta };
+        const finalState = busted ? withSessionResult(nextState, -10) : nextState;
         return { state: finalState, status: getStatus(finalState, setup) };
       }
       if (command.type === 'stand') {
@@ -131,10 +159,39 @@ export const blackjackBundle: GameBundle<BlackjackState> = {
         const playerTotal = handValue(nextState.playerHand);
         const dealerTotal = handValue(nextState.dealerHand);
         const chipDelta = dealerTotal > 21 || playerTotal > dealerTotal ? 10 : playerTotal === dealerTotal ? 0 : -10;
-        const finalState = { ...nextState, roundOver: true, chipDelta };
+        const finalState = withSessionResult(nextState, chipDelta);
         return { state: finalState, status: getStatus(finalState, setup) };
       }
       return { state, status: getStatus(state, setup) };
+    },
+    getSessionStats: (state) => state.session,
+    createReplaySnapshot: (snapshot) => {
+      const nextRound = nextSeed(snapshot.roundSeed);
+      const setup = {
+        ...snapshot.setup,
+        id: createRuntimeId('blackjack'),
+        tutorialEnabled: false,
+        seed: nextRound.seed,
+      };
+      const priorState = snapshot.state as BlackjackState;
+      const state = createRound(setup, priorState.session);
+      const status = getStatus(state, setup);
+      return {
+        ...snapshot,
+        id: setup.id,
+        setup,
+        state,
+        history: [],
+        status: {
+          ...status,
+          rematchLabel: 'Next Hand',
+        },
+        roundIndex: snapshot.roundIndex + 1,
+        roundSeed: nextRound.seed,
+        sessionStats: state.session,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
     },
     getMetrics: (state) => ({
       playerTotal: handValue(state.playerHand),
@@ -183,9 +240,6 @@ export const blackjackBundle: GameBundle<BlackjackState> = {
           </button>
           <button type="button" className="ghost-button" onClick={() => dispatch(createCommand(snapshot.setup.players[0].id, 'stand', {}))} disabled={state.roundOver}>
             Stand
-          </button>
-          <button type="button" className="ghost-button" onClick={() => dispatch(createCommand(snapshot.setup.players[0].id, 'reset', {}))}>
-            New round
           </button>
         </div>
       </div>

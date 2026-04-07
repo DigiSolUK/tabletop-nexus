@@ -1,10 +1,18 @@
 import { useState } from 'react';
 import { HashRouter, NavLink, Navigate, Route, Routes, useNavigate } from 'react-router-dom';
-import { AppStateProvider, useAppState } from '../state/app-state';
 import { TutorialOverlay } from '../components/TutorialOverlay';
-import { CreateScreen, HelpScreen, ModsScreen, PartyScreen, ProfileScreen, SettingsScreen, StatsScreen } from '../screens/tool-screens';
 import { GameSetupScreen, GamesScreen, HomeScreen } from '../screens/dashboard-screens';
 import { MatchScreen } from '../screens/match-screen';
+import {
+  CreateScreen,
+  HelpScreen,
+  ModsScreen,
+  PartyScreen,
+  ProfileScreen,
+  SettingsScreen,
+  StatsScreen,
+} from '../screens/tool-screens';
+import { AppStateProvider, useAppState } from '../state/app-state';
 import '../styles/global.css';
 
 const navItems = [
@@ -23,8 +31,8 @@ const SplashScreen = () => (
   <div className="splash-screen">
     <div className="splash-card">
       <span className="eyebrow">TableTop Nexus</span>
-      <h1>Loading your tabletop lounge</h1>
-      <p>Booting the premium shell, saved data, and local game platform.</p>
+      <h1>Loading your tactical lounge</h1>
+      <p>Booting saves, profiles, local game runtimes, and the latest release intelligence.</p>
       <div className="loading-bar">
         <div className="loading-bar__fill" />
       </div>
@@ -51,36 +59,19 @@ const LaunchGateway = () => {
           <button type="button" className="primary-button" onClick={() => setDismissed(true)}>
             Continue offline
           </button>
-          <button
-            type="button"
-            className="ghost-button"
-            onClick={() => {
-              setDismissed(true);
-              navigate('/profile');
-            }}
-          >
-            Sign in
-          </button>
-          <button
-            type="button"
-            className="ghost-button"
-            onClick={() => {
-              setDismissed(true);
-              navigate('/profile');
-            }}
-          >
-            Create account
-          </button>
-          <button
-            type="button"
-            className="ghost-button"
-            onClick={() => {
-              setDismissed(true);
-              navigate('/profile');
-            }}
-          >
-            Switch account
-          </button>
+          {['Sign in', 'Create account', 'Switch account'].map((label) => (
+            <button
+              key={label}
+              type="button"
+              className="ghost-button"
+              onClick={() => {
+                setDismissed(true);
+                navigate('/profile');
+              }}
+            >
+              {label}
+            </button>
+          ))}
         </div>
       </div>
     </div>
@@ -88,7 +79,7 @@ const LaunchGateway = () => {
 };
 
 const AppChrome = () => {
-  const { loading, bootstrap, exportMessage, setExportMessage } = useAppState();
+  const { loading, bootstrap, exportMessage, setExportMessage, dismissUpdateNotice } = useAppState();
 
   if (loading || !bootstrap) {
     return <SplashScreen />;
@@ -99,13 +90,18 @@ const AppChrome = () => {
       <div className="app-shell">
         <aside className="sidebar">
           <div>
-            <span className="eyebrow">Premium Offline Platform</span>
+            <span className="eyebrow">Premium Tech-Table Platform</span>
             <h1>TableTop Nexus</h1>
-            <p>Board, card, and party games with creator tools, mods, stats, and hosted lobbies.</p>
+            <p>Board, card, and party games with creator tools, mods, stats, hosted lobbies, and now a cleaner rematch flow.</p>
           </div>
           <nav className="sidebar-nav">
             {navItems.map((item) => (
-              <NavLink key={item.to} to={item.to} className={({ isActive }) => `nav-link ${isActive ? 'nav-link--active' : ''}`} id={item.id}>
+              <NavLink
+                key={item.to}
+                to={item.to}
+                className={({ isActive }) => `nav-link ${isActive ? 'nav-link--active' : ''}`}
+                id={item.id}
+              >
                 {item.label}
               </NavLink>
             ))}
@@ -113,19 +109,47 @@ const AppChrome = () => {
           <section className="profile-card">
             <div className="player-row__identity">
               <div className="avatar-frame">
-                {bootstrap.profile.avatarAsset ? <img src={bootstrap.profile.avatarAsset} alt={bootstrap.profile.displayName} /> : <span>{bootstrap.profile.displayName.slice(0, 2).toUpperCase()}</span>}
+                {bootstrap.profile.avatarAsset ? (
+                  <img src={bootstrap.profile.avatarAsset} alt={bootstrap.profile.displayName} />
+                ) : (
+                  <span>{bootstrap.profile.displayName.slice(0, 2).toUpperCase()}</span>
+                )}
               </div>
               <span className="profile-dot" style={{ background: bootstrap.profile.accent }} />
             </div>
             <div>
               <strong>{bootstrap.profile.displayName}</strong>
-              <p>
-                {bootstrap.auth.state} · {bootstrap.syncStatus.phase}
-              </p>
+              <p>{bootstrap.auth.state} · {bootstrap.syncStatus.phase}</p>
             </div>
           </section>
         </aside>
         <main className="main-shell">
+          {bootstrap.updateStatus.available ? (
+            <section className="banner banner--update">
+              <div className="stack">
+                <strong>Update available</strong>
+                <p>
+                  Version {bootstrap.updateStatus.latestVersion} is ready. You’re currently on {bootstrap.updateStatus.currentVersion}.
+                </p>
+              </div>
+              <div className="button-row">
+                <button
+                  type="button"
+                  className="primary-button"
+                  onClick={() => {
+                    if (bootstrap.updateStatus.downloadUrl) {
+                      window.open(bootstrap.updateStatus.downloadUrl, '_blank', 'noopener,noreferrer');
+                    }
+                  }}
+                >
+                  Download update
+                </button>
+                <button type="button" className="ghost-button" onClick={() => void dismissUpdateNotice()}>
+                  Dismiss
+                </button>
+              </div>
+            </section>
+          ) : null}
           {exportMessage ? (
             <button type="button" className="banner" onClick={() => setExportMessage(null)}>
               {exportMessage}

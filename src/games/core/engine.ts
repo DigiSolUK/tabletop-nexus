@@ -5,6 +5,7 @@ import type {
   MatchSetup,
   MatchSnapshot,
   MatchStatus,
+  MatchStatusInput,
   MoveCommand,
   ReplayEvent,
   TutorialScript,
@@ -13,7 +14,7 @@ import { APP_SCHEMA_VERSION } from '../../shared/constants';
 
 export interface CommandResult<TState> {
   state: TState;
-  status: MatchStatus;
+  status: MatchStatusInput;
   events?: ReplayEvent[];
 }
 
@@ -27,10 +28,12 @@ export interface GameDefinition<TState = unknown> {
   manifest: GameManifest;
   tutorial: TutorialScript;
   createInitialState: (setup: MatchSetup) => TState;
-  getStatus: (state: TState, setup: MatchSetup) => MatchStatus;
+  getStatus: (state: TState, setup: MatchSetup) => MatchStatusInput;
   applyCommand: (state: TState, setup: MatchSetup, command: MoveCommand) => CommandResult<TState>;
   getMetrics?: (state: TState, setup: MatchSetup) => Record<string, number>;
+  getSessionStats?: (state: TState, setup: MatchSetup) => Record<string, number> | undefined;
   createAiCommand?: (state: TState, setup: MatchSetup, difficulty: DifficultyLevel) => MoveCommand | null;
+  createReplaySnapshot?: (snapshot: MatchSnapshot<TState>) => MatchSnapshot<TState>;
 }
 
 export interface GameBundle<TState = unknown> {
@@ -43,26 +46,52 @@ export const createCommand = <TPayload extends Record<string, unknown>>(
   type: string,
   payload: TPayload
 ): MoveCommand<TPayload> => ({
-  id: globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`,
+  id: createRuntimeId('cmd'),
   playerId,
   type,
   payload,
   createdAt: new Date().toISOString(),
 });
 
+export const createRuntimeId = (prefix = 'match') =>
+  globalThis.crypto?.randomUUID?.() ?? `${prefix}-${Date.now()}-${(globalThis.performance?.now?.() ?? 0).toFixed(0)}`;
+
+const defaultRematchLabel = (manifest: GameManifest) =>
+  manifest.roundMode === 'session-rounds' ? 'Next Hand' : 'Play Again';
+
+const normalizeStatus = (manifest: GameManifest, status: MatchStatusInput): MatchStatus => ({
+  ...status,
+  canRematch:
+    typeof status.canRematch === 'boolean'
+      ? status.canRematch
+      : status.phase === 'complete',
+  rematchLabel:
+    status.phase === 'complete'
+      ? status.rematchLabel ?? defaultRematchLabel(manifest)
+      : null,
+});
+
 export const createSnapshot = <TState>(
-  gameId: string,
+  definition: GameDefinition<TState>,
   setup: MatchSetup,
   state: TState,
-  status: MatchStatus
+  status: MatchStatusInput,
+  options?: {
+    id?: string;
+    roundIndex?: number;
+    roundSeed?: number;
+  }
 ): MatchSnapshot<TState> => ({
   schemaVersion: APP_SCHEMA_VERSION,
-  id: setup.id,
-  gameId,
+  id: options?.id ?? setup.id,
+  gameId: definition.manifest.id,
   setup,
   state,
   history: [],
-  status,
+  status: normalizeStatus(definition.manifest, status),
+  roundIndex: options?.roundIndex ?? 0,
+  roundSeed: options?.roundSeed ?? setup.seed,
+  sessionStats: definition.getSessionStats?.(state, setup),
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),
 });
@@ -90,7 +119,8 @@ export const advanceSnapshot = <TState>(
     ...snapshot,
     state: result.state,
     history,
-    status: result.status,
+    status: normalizeStatus(definition.manifest, result.status),
+    sessionStats: definition.getSessionStats?.(result.state, snapshot.setup) ?? snapshot.sessionStats,
     updatedAt: new Date().toISOString(),
   };
 };
@@ -119,4 +149,28 @@ export const rotatePlayerId = (players: MatchSetup['players'], currentPlayerId: 
   const index = players.findIndex((player) => player.id === currentPlayerId);
   const nextIndex = index === -1 ? 0 : (index + 1) % players.length;
   return players[nextIndex].id;
+};
+
+export const createReplaySnapshot = <TState>(
+  snapshot: MatchSnapshot<TState>,
+  definition: GameDefinition<TState>
+): MatchSnapshot<TState> => {
+  if (definition.createReplaySnapshot) {
+    return definition.createReplaySnapshot(snapshot);
+  }
+
+  const nextRound = nextSeed(snapshot.roundSeed);
+  const setup: MatchSetup = {
+    ...snapshot.setup,
+    id: createRuntimeId(definition.manifest.id),
+    tutorialEnabled: false,
+    seed: nextRound.seed,
+  };
+  const state = definition.createInitialState(setup);
+  const status = definition.getStatus(state, setup);
+  return createSnapshot(definition, setup, state, status, {
+    id: setup.id,
+    roundIndex: snapshot.roundIndex + 1,
+    roundSeed: nextRound.seed,
+  });
 };

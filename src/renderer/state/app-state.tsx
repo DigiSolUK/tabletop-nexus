@@ -9,7 +9,7 @@ import {
 } from 'react';
 import { builtInGameCatalogue, getGameBundle } from '../../games/core/registry';
 import { tutorialsById } from '../../games/core/tutorials';
-import { createSnapshot } from '../../games/core/engine';
+import { createReplaySnapshot, createRuntimeId, createSnapshot } from '../../games/core/engine';
 import { PLAYER_ACCENTS } from '../../shared/constants';
 import type {
   AppSettings,
@@ -42,6 +42,7 @@ interface AppStateValue {
   syncNow: () => Promise<void>;
   uploadAvatar: () => Promise<void>;
   startMatch: (setup: MatchSetup) => void;
+  rematchActiveSnapshot: () => void;
   updateActiveSnapshot: (snapshot: MatchSnapshot) => void;
   clearActiveSnapshot: () => void;
   resumeSave: (saveId: string) => void;
@@ -56,9 +57,36 @@ interface AppStateValue {
   createCustomPackage: (manifest: ModManifest) => Promise<void>;
   setModEnabled: (modId: string, enabled: boolean) => Promise<void>;
   setExportMessage: (message: string | null) => void;
+  checkForAppUpdate: () => Promise<void>;
+  dismissUpdateNotice: () => Promise<void>;
 }
 
 const AppStateContext = createContext<AppStateValue | null>(null);
+
+const createSeed = () => globalThis.crypto?.getRandomValues?.(new Uint32Array(1))[0] ?? Date.now();
+
+const hydrateSnapshot = (snapshot: MatchSnapshot | null): MatchSnapshot | null => {
+  if (!snapshot) {
+    return null;
+  }
+  return {
+    ...snapshot,
+    roundIndex: snapshot.roundIndex ?? 0,
+    roundSeed: snapshot.roundSeed ?? snapshot.setup.seed,
+    sessionStats: snapshot.sessionStats,
+    status: {
+      canRematch: snapshot.status.phase === 'complete',
+      rematchLabel:
+        snapshot.status.phase === 'complete' &&
+        getGameBundle(snapshot.gameId)?.definition.manifest.roundMode === 'session-rounds'
+          ? 'Next Hand'
+          : snapshot.status.phase === 'complete'
+            ? 'Play Again'
+            : null,
+      ...snapshot.status,
+    },
+  };
+};
 
 export const AppStateProvider = ({ children }: PropsWithChildren) => {
   const [loading, setLoading] = useState(true);
@@ -70,14 +98,14 @@ export const AppStateProvider = ({ children }: PropsWithChildren) => {
 
   const refresh = useCallback(async () => {
     const payload = await window.desktopAPI.bootstrap();
-    setBootstrap(payload);
-    setActiveSnapshot(payload.activeMatch);
+    setBootstrap({ ...payload, activeMatch: hydrateSnapshot(payload.activeMatch) });
+    setActiveSnapshot(hydrateSnapshot(payload.activeMatch));
     setLoading(false);
     if (payload.auth.pendingCallbackUrl && payload.auth.state !== 'authenticated') {
       await window.desktopAPI.completeAuth(payload.auth.pendingCallbackUrl);
       const refreshed = await window.desktopAPI.bootstrap();
-      setBootstrap(refreshed);
-      setActiveSnapshot(refreshed.activeMatch);
+      setBootstrap({ ...refreshed, activeMatch: hydrateSnapshot(refreshed.activeMatch) });
+      setActiveSnapshot(hydrateSnapshot(refreshed.activeMatch));
     }
     if (payload.settings.tutorialsEnabled && !payload.tutorialsSeen.includes('tutorial-app')) {
       setActiveTutorial(tutorialsById['tutorial-app']);
@@ -111,8 +139,8 @@ export const AppStateProvider = ({ children }: PropsWithChildren) => {
 
   const switchProfile = useCallback(async (profileId: string) => {
     const payload = await window.desktopAPI.switchProfile(profileId);
-    setBootstrap(payload);
-    setActiveSnapshot(payload.activeMatch);
+    setBootstrap({ ...payload, activeMatch: hydrateSnapshot(payload.activeMatch) });
+    setActiveSnapshot(hydrateSnapshot(payload.activeMatch));
   }, []);
 
   const beginAuth = useCallback(async (email: string, mode: 'sign-in' | 'sign-up', displayName?: string) => {
@@ -182,9 +210,9 @@ export const AppStateProvider = ({ children }: PropsWithChildren) => {
       }
       const state = bundle.definition.createInitialState(setup);
       const status = bundle.definition.getStatus(state, setup);
-      const snapshot = createSnapshot(setup.gameId, setup, state, status);
+      const snapshot = hydrateSnapshot(createSnapshot(bundle.definition, setup, state, status));
       setActiveSnapshot(snapshot);
-      void window.desktopAPI.saveActiveMatch(snapshot);
+      void window.desktopAPI.saveActiveMatch(snapshot as MatchSnapshot);
       void touchRecent(setup.gameId);
       const tutorialId = bundle.definition.tutorial.id;
       if (bootstrap?.settings.tutorialsEnabled && setup.tutorialEnabled && !bootstrap.tutorialsSeen.includes(tutorialId)) {
@@ -195,9 +223,23 @@ export const AppStateProvider = ({ children }: PropsWithChildren) => {
     [bootstrap, touchRecent]
   );
 
-  const updateActiveSnapshot = useCallback((snapshot: MatchSnapshot) => {
+  const rematchActiveSnapshot = useCallback(() => {
+    if (!activeSnapshot) {
+      return;
+    }
+    const bundle = getGameBundle(activeSnapshot.gameId);
+    if (!bundle) {
+      return;
+    }
+    const snapshot = hydrateSnapshot(createReplaySnapshot(activeSnapshot, bundle.definition));
     setActiveSnapshot(snapshot);
-    void window.desktopAPI.saveActiveMatch(snapshot);
+    void window.desktopAPI.saveActiveMatch(snapshot as MatchSnapshot);
+  }, [activeSnapshot]);
+
+  const updateActiveSnapshot = useCallback((snapshot: MatchSnapshot) => {
+    const hydrated = hydrateSnapshot(snapshot);
+    setActiveSnapshot(hydrated);
+    void window.desktopAPI.saveActiveMatch(hydrated as MatchSnapshot);
   }, []);
 
   const clearActiveSnapshot = useCallback(() => {
@@ -211,8 +253,9 @@ export const AppStateProvider = ({ children }: PropsWithChildren) => {
       if (!slot) {
         return;
       }
-      setActiveSnapshot(slot.snapshot);
-      void window.desktopAPI.saveActiveMatch(slot.snapshot);
+      const snapshot = hydrateSnapshot(slot.snapshot);
+      setActiveSnapshot(snapshot);
+      void window.desktopAPI.saveActiveMatch(snapshot as MatchSnapshot);
       void touchRecent(slot.gameId);
     },
     [bootstrap, touchRecent]
@@ -299,6 +342,16 @@ export const AppStateProvider = ({ children }: PropsWithChildren) => {
     [refresh]
   );
 
+  const checkForAppUpdate = useCallback(async () => {
+    const updateStatus = await window.desktopAPI.checkForAppUpdate();
+    setBootstrap((current) => (current ? { ...current, updateStatus } : current));
+  }, []);
+
+  const dismissUpdateNotice = useCallback(async () => {
+    const updateStatus = await window.desktopAPI.dismissUpdateNotice();
+    setBootstrap((current) => (current ? { ...current, updateStatus } : current));
+  }, []);
+
   const value = useMemo<AppStateValue>(
     () => ({
       loading,
@@ -318,6 +371,7 @@ export const AppStateProvider = ({ children }: PropsWithChildren) => {
       syncNow,
       uploadAvatar,
       startMatch,
+      rematchActiveSnapshot,
       updateActiveSnapshot,
       clearActiveSnapshot,
       resumeSave,
@@ -332,6 +386,8 @@ export const AppStateProvider = ({ children }: PropsWithChildren) => {
       createCustomPackage,
       setModEnabled,
       setExportMessage,
+      checkForAppUpdate,
+      dismissUpdateNotice,
     }),
     [
       activeSnapshot,
@@ -356,11 +412,14 @@ export const AppStateProvider = ({ children }: PropsWithChildren) => {
       showTutorial,
       signOut,
       startMatch,
+      rematchActiveSnapshot,
       switchProfile,
       syncNow,
       toggleFavourite,
       uploadAvatar,
       updateActiveSnapshot,
+      checkForAppUpdate,
+      dismissUpdateNotice,
     ]
   );
 
@@ -394,3 +453,23 @@ export const buildPlayerSeats = (
       isLocal: !aiPlayer && index === 0,
     };
   });
+
+export const buildMatchSetup = (
+  gameId: string,
+  mode: MatchSetup['mode'],
+  players: PlayerSeat[],
+  aiDifficulty: MatchSetup['aiDifficulty'],
+  tutorialEnabled: boolean,
+  timerSeconds?: number
+): MatchSetup => ({
+  id: createRuntimeId(gameId),
+  gameId,
+  mode,
+  players,
+  aiDifficulty,
+  tutorialEnabled,
+  timerSeconds,
+  themeId: 'default',
+  seed: createSeed(),
+  ruleVariants: {},
+});

@@ -10,7 +10,16 @@ import { useAppState } from '../state/app-state';
 export const MatchScreen = () => {
   const { gameId } = useParams();
   const navigate = useNavigate();
-  const { bootstrap, activeSnapshot, clearActiveSnapshot, saveActiveSnapshot, updateActiveSnapshot, recordCompletedMatch, showTutorial } =
+  const {
+    bootstrap,
+    activeSnapshot,
+    clearActiveSnapshot,
+    rematchActiveSnapshot,
+    saveActiveSnapshot,
+    updateActiveSnapshot,
+    recordCompletedMatch,
+    showTutorial,
+  } =
     useAppState();
   const recordRef = useRef(new Set<string>());
   const bundle = gameId ? getGameBundle(gameId) : null;
@@ -126,6 +135,10 @@ export const MatchScreen = () => {
           }
         }}
         onTutorial={() => void showTutorial(bundle.definition.tutorial.id)}
+        onRematch={() => {
+          rematchActiveSnapshot();
+        }}
+        onBackToSetup={() => navigate(`/games/${activeSnapshot.gameId}/setup`)}
         onExit={() => {
           clearActiveSnapshot();
           navigate('/');

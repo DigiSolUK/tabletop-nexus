@@ -1,7 +1,7 @@
 {
   "name": "tabletop-nexus",
   "productName": "TableTop Nexus",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Premium desktop tabletop gaming platform for offline, local, and party play.",
   "main": ".vite/build/main.js",
   "private": true,

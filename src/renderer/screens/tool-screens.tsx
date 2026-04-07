@@ -452,7 +452,7 @@ export const StatsScreen = () => {
 };
 
 export const HelpScreen = () => {
-  const { bootstrap, showTutorial } = useAppState();
+  const { bootstrap, showTutorial, checkForAppUpdate } = useAppState();
   if (!bootstrap) {
     return null;
   }
@@ -478,9 +478,19 @@ export const HelpScreen = () => {
         <section className="surface-panel">
           <h3>Release notes</h3>
           <div className="stack">
+            <div className="button-row">
+              <button type="button" className="primary-button" onClick={() => void checkForAppUpdate()}>
+                Check for updates
+              </button>
+              <p>
+                Current version {bootstrap.version}
+                {bootstrap.updateStatus.latestVersion ? ` · Latest ${bootstrap.updateStatus.latestVersion}` : ''}
+              </p>
+            </div>
             {bootstrap.releaseNotes.map((note) => (
               <p key={note}>{note}</p>
             ))}
+            {bootstrap.updateStatus.error ? <p>{bootstrap.updateStatus.error}</p> : null}
           </div>
         </section>
       </div>
@@ -665,7 +675,7 @@ export const ProfileScreen = () => {
 };
 
 export const SettingsScreen = () => {
-  const { bootstrap, saveSettings } = useAppState();
+  const { bootstrap, saveSettings, checkForAppUpdate } = useAppState();
   const [settings, setSettings] = useState(bootstrap?.settings ?? null);
 
   useEffect(() => {
@@ -716,6 +726,11 @@ export const SettingsScreen = () => {
           <p>Active profile: {bootstrap.profile.displayName}</p>
           <p>Auth state: {bootstrap.auth.state}</p>
           <p>Sync state: {bootstrap.syncStatus.phase}</p>
+          <p>App version: {bootstrap.version}</p>
+          <p>Latest stable: {bootstrap.updateStatus.latestVersion ?? 'Not checked yet'}</p>
+          <button type="button" className="ghost-button" onClick={() => void checkForAppUpdate()}>
+            Check for updates
+          </button>
           <p>Use the Profiles screen to switch accounts, upload avatars, create local players, or sign in for cloud sync.</p>
         </section>
       </div>

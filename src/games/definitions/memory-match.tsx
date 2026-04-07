@@ -18,7 +18,32 @@ interface MemoryMatchState {
   pendingMismatch: boolean;
 }
 
-const symbols = ['Sun', 'Moon', 'Star', 'Dice', 'Card', 'Pawn', 'Gem', 'Map'];
+const symbolPool = [
+  'Sun',
+  'Moon',
+  'Star',
+  'Dice',
+  'Card',
+  'Pawn',
+  'Gem',
+  'Map',
+  'Comet',
+  'Lantern',
+  'Compass',
+  'Shield',
+  'Anchor',
+  'Planet',
+  'Crown',
+  'Mask',
+  'Crystal',
+  'Rocket',
+  'Feather',
+  'Bolt',
+  'Pearl',
+  'Scroll',
+  'Drum',
+  'Key',
+];
 
 const getStatus = (state: MemoryMatchState, setup: MatchSetup): MatchStatus => {
   const matchedCards = state.deck.filter((card) => card.matchedBy).length;
@@ -52,11 +77,12 @@ export const memoryMatchBundle: GameBundle<MemoryMatchState> = {
     manifest: manifestById['memory-match'],
     tutorial: tutorialsById['tutorial-memory-match'],
     createInitialState: (setup) => {
-      const cards = symbols.flatMap((symbol, index) => [
+      const chosenSymbols = shuffleWithSeed(symbolPool, setup.seed).items.slice(0, 8);
+      const cards = chosenSymbols.flatMap((symbol, index) => [
         { id: `${symbol}-${index}-a`, symbol, matchedBy: null },
         { id: `${symbol}-${index}-b`, symbol, matchedBy: null },
       ]);
-      const shuffled = shuffleWithSeed(cards, setup.seed);
+      const shuffled = shuffleWithSeed(cards, setup.seed + chosenSymbols.length);
       return {
         deck: shuffled.items,
         revealed: [],

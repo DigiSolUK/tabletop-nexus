@@ -17,6 +17,7 @@ import type {
   ProfileSummary,
   SaveSlot,
   SyncStatus,
+  UpdateStatus,
 } from './contracts';
 
 export interface DesktopAPI {
@@ -30,6 +31,8 @@ export interface DesktopAPI {
   signOut: () => Promise<AuthSessionState>;
   syncNow: () => Promise<SyncStatus>;
   uploadAvatar: () => Promise<ProfileSummary | null>;
+  checkForAppUpdate: () => Promise<UpdateStatus>;
+  dismissUpdateNotice: () => Promise<UpdateStatus>;
   getActiveMatch: () => Promise<MatchSnapshot | null>;
   saveActiveMatch: (snapshot: MatchSnapshot) => Promise<MatchSnapshot>;
   clearActiveMatch: () => Promise<void>;
