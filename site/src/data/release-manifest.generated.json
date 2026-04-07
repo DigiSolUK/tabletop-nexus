@@ -8,12 +8,53 @@
     "linux": "Ubuntu 22.04 / equivalent"
   },
   "notes": [
-    "No stable release artifact set has been generated yet, so the website should fall back to the GitHub Releases page.",
-    "Once a stable release is built and published, this manifest will be regenerated from the actual uploaded installer names and checksums."
+    "Stable installers are published through GitHub Releases and mirrored on the TableTop Nexus website through a generated manifest.",
+    "Verify the published SHA256 checksum before installing if you want to confirm file integrity."
   ],
-  "assets": [],
+  "assets": [
+    {
+      "platform": "windows",
+      "label": "Windows Installer",
+      "arch": "x64",
+      "format": "exe",
+      "url": "https://github.com/DigiSolUK/tabletop-nexus/releases/download/v1.0.2/TableTop.Nexus-1.0.2.Setup.exe",
+      "checksumUrl": "https://github.com/DigiSolUK/tabletop-nexus/releases/download/v1.0.2/checksums.txt",
+      "size": "131.9 MB",
+      "sha256": "6747079cdc688b4f06bb668727c74eec0763583bb0fa500ef40fa0913a871b06"
+    },
+    {
+      "platform": "macos",
+      "label": "macOS Build",
+      "arch": "arm64",
+      "format": "zip",
+      "url": "https://github.com/DigiSolUK/tabletop-nexus/releases/download/v1.0.2/TableTop.Nexus-darwin-arm64-1.0.2.zip",
+      "checksumUrl": "https://github.com/DigiSolUK/tabletop-nexus/releases/download/v1.0.2/checksums.txt",
+      "size": "109.2 MB",
+      "sha256": "ce223295ed6a72e8c51c4e4fd049aae666573fb399d2168905d651dfb367d60e"
+    },
+    {
+      "platform": "linux",
+      "label": "Linux DEB Package",
+      "arch": "x64",
+      "format": "deb",
+      "url": "https://github.com/DigiSolUK/tabletop-nexus/releases/download/v1.0.2/tabletop-nexus_1.0.2_amd64.deb",
+      "checksumUrl": "https://github.com/DigiSolUK/tabletop-nexus/releases/download/v1.0.2/checksums.txt",
+      "size": "85.9 MB",
+      "sha256": "04997e234182abf66ad6fbc6166f97f5d7c86eaf4437bd39065888cbd38ced99"
+    },
+    {
+      "platform": "linux",
+      "label": "Linux RPM Package",
+      "arch": "x64",
+      "format": "rpm",
+      "url": "https://github.com/DigiSolUK/tabletop-nexus/releases/download/v1.0.2/tabletop-nexus-1.0.2-1.x86_64.rpm",
+      "checksumUrl": "https://github.com/DigiSolUK/tabletop-nexus/releases/download/v1.0.2/checksums.txt",
+      "size": "90.0 MB",
+      "sha256": "a73174aba75de22bb5e270fc239ccd4e5605976a89304cd26d55b2b62dd4e0ba"
+    }
+  ],
   "links": {
-    "website": "https://tabletopnexus.app",
-    "release": "https://github.com/DigiSolUK/tabletop-nexus/releases"
+    "website": "https://digisoluk.github.io/tabletop-nexus/",
+    "release": "https://github.com/DigiSolUK/tabletop-nexus/releases/tag/v1.0.2"
   }
 }

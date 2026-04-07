@@ -4,22 +4,68 @@ import packageJson from '../package.json' with { type: 'json' };
 
 const version = process.env.RELEASE_VERSION ?? packageJson.version;
 const releaseTag = process.env.RELEASE_TAG ?? `v${version}`;
-const releaseDate = process.env.RELEASE_DATE ?? new Date().toISOString().slice(0, 10);
 const repoSlug =
   process.env.RELEASE_REPO_SLUG ??
   process.env.GITHUB_REPOSITORY ??
   'DigiSolUK/tabletop-nexus';
-const siteUrl = process.env.PUBLIC_SITE_URL ?? process.env.TABLETOP_NEXUS_SITE_URL ?? 'https://tabletopnexus.app';
+const siteUrl =
+  process.env.PUBLIC_SITE_URL ??
+  process.env.TABLETOP_NEXUS_SITE_URL ??
+  'https://digisoluk.github.io/tabletop-nexus/';
 const baseUrl =
   process.env.RELEASE_BASE_URL ?? `https://github.com/${repoSlug}/releases/download/${releaseTag}`;
 const artifactsDir = process.env.RELEASE_ASSETS_DIR
   ? resolve(process.env.RELEASE_ASSETS_DIR)
   : null;
-const hasArtifactSnapshot = artifactsDir ? statExists(artifactsDir) : false;
-
+const metadataPath = process.env.RELEASE_METADATA_PATH
+  ? resolve(process.env.RELEASE_METADATA_PATH)
+  : null;
 const checksumAssetName = process.env.RELEASE_CHECKSUMS_NAME ?? 'checksums.txt';
-const checksumsUrl = process.env.RELEASE_CHECKSUMS_URL ?? `${baseUrl}/${checksumAssetName}`;
+
+function statExists(path) {
+  try {
+    statSync(path);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+const hasArtifactSnapshot = artifactsDir ? statExists(artifactsDir) : false;
 const checksumsPath = artifactsDir ? resolve(artifactsDir, checksumAssetName) : null;
+
+const readReleaseMetadata = () => {
+  if (!metadataPath || !statExists(metadataPath)) {
+    return null;
+  }
+
+  try {
+    const buffer = readFileSync(metadataPath);
+    let raw;
+
+    if (buffer.length >= 2 && buffer[0] === 0xff && buffer[1] === 0xfe) {
+      raw = buffer.toString('utf16le').replace(/^\uFEFF/, '');
+    } else {
+      raw = buffer.toString('utf8').replace(/^\uFEFF/, '');
+    }
+
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+};
+
+const releaseMetadata = readReleaseMetadata();
+const publishedAssets = Array.isArray(releaseMetadata?.assets) ? releaseMetadata.assets : [];
+const checksumsAsset = publishedAssets.find((asset) => asset?.name === checksumAssetName) ?? null;
+const releaseDate =
+  process.env.RELEASE_DATE ??
+  releaseMetadata?.publishedAt?.slice(0, 10) ??
+  new Date().toISOString().slice(0, 10);
+const checksumsUrl =
+  process.env.RELEASE_CHECKSUMS_URL ??
+  checksumsAsset?.url ??
+  `${baseUrl}/${checksumAssetName}`;
 
 const listFiles = (directory) => {
   const entries = readdirSync(directory, { withFileTypes: true });
@@ -45,15 +91,6 @@ const formatSize = (bytes) => {
   return `${bytes} B`;
 };
 
-function statExists(path) {
-  try {
-    statSync(path);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
 const readChecksums = () => {
   if (!checksumsPath || !statExists(checksumsPath)) {
     return new Map();
@@ -74,7 +111,92 @@ const readChecksums = () => {
 
 const checksumMap = readChecksums();
 
-const createAsset = (platform, label, arch, format, filename, size = 'TBD') => ({
+const inferArch = (filename) => {
+  const lower = filename.toLowerCase();
+  if (lower.includes('arm64') || lower.includes('aarch64')) {
+    return 'arm64';
+  }
+  if (lower.includes('universal')) {
+    return 'universal';
+  }
+  return 'x64';
+};
+
+const classifyAsset = (filename) => {
+  const extension = extname(filename).toLowerCase();
+  const lower = filename.toLowerCase();
+
+  if (filename === checksumAssetName || filename === 'RELEASES' || extension === '.nupkg') {
+    return null;
+  }
+
+  if (extension === '.exe' || extension === '.msi') {
+    return {
+      platform: 'windows',
+      label: 'Windows Installer',
+      arch: inferArch(filename),
+      format: extension.slice(1),
+    };
+  }
+
+  if (extension === '.dmg' || (extension === '.zip' && (lower.includes('darwin') || lower.includes('mac')))) {
+    return {
+      platform: 'macos',
+      label: 'macOS Build',
+      arch: inferArch(filename),
+      format: extension.slice(1),
+    };
+  }
+
+  if (extension === '.deb') {
+    return {
+      platform: 'linux',
+      label: 'Linux DEB Package',
+      arch: inferArch(filename),
+      format: 'deb',
+    };
+  }
+
+  if (extension === '.rpm') {
+    return {
+      platform: 'linux',
+      label: 'Linux RPM Package',
+      arch: inferArch(filename),
+      format: 'rpm',
+    };
+  }
+
+  if (extension === '.appimage') {
+    return {
+      platform: 'linux',
+      label: 'Linux AppImage',
+      arch: inferArch(filename),
+      format: 'appimage',
+    };
+  }
+
+  return null;
+};
+
+const sortAssets = (assets) => {
+  const order = {
+    'windows:exe': 0,
+    'windows:msi': 1,
+    'macos:dmg': 2,
+    'macos:zip': 3,
+    'linux:deb': 4,
+    'linux:rpm': 5,
+    'linux:appimage': 6,
+  };
+
+  return assets.sort((left, right) => {
+    const leftKey = `${left.platform}:${left.format}`;
+    const rightKey = `${right.platform}:${right.format}`;
+    return (order[leftKey] ?? 99) - (order[rightKey] ?? 99);
+  });
+};
+
+const createDirectoryAsset = (platform, label, arch, format, filename, size = 'TBD') => ({
   platform,
   label,
   arch,
@@ -85,90 +207,62 @@ const createAsset = (platform, label, arch, format, filename, size = 'TBD') => (
   sha256: checksumMap.get(filename),
 });
 
-const pickArtifact = (files, rules) => {
-  for (const rule of rules) {
-    const matched = files.find((file) => rule(file));
-    if (matched) {
-      return matched;
-    }
-  }
-  return null;
-};
+const inferAssetsFromMetadata = () =>
+  sortAssets(
+    publishedAssets
+      .map((asset) => {
+        const classified = classifyAsset(asset?.name ?? '');
+        if (!classified) {
+          return null;
+        }
 
-const inferAssets = () => {
+        return {
+          ...classified,
+          url: asset.url,
+          checksumUrl: checksumsUrl,
+          size: typeof asset.size === 'number' ? formatSize(asset.size) : 'TBD',
+          sha256:
+            typeof asset.digest === 'string' && asset.digest.startsWith('sha256:')
+              ? asset.digest.slice('sha256:'.length)
+              : undefined,
+        };
+      })
+      .filter(Boolean)
+  );
+
+const inferAssetsFromDirectory = () => {
   if (!hasArtifactSnapshot) {
     return [];
   }
 
-  const files = listFiles(artifactsDir);
-  const windowsFile =
-    pickArtifact(files, [
-      (file) => extname(file).toLowerCase() === '.exe' && file.toLowerCase().includes('setup'),
-      (file) => extname(file).toLowerCase() === '.msi',
-    ]) ?? null;
-  const macFile =
-    pickArtifact(files, [
-      (file) => extname(file).toLowerCase() === '.dmg',
-      (file) => extname(file).toLowerCase() === '.zip' && file.toLowerCase().includes('darwin'),
-      (file) => extname(file).toLowerCase() === '.zip' && file.toLowerCase().includes('mac'),
-    ]) ?? null;
-  const linuxFile =
-    pickArtifact(files, [
-      (file) => extname(file).toLowerCase() === '.deb',
-      (file) => extname(file).toLowerCase() === '.rpm',
-      (file) => extname(file).toLowerCase() === '.appimage',
-    ]) ?? null;
+  return sortAssets(
+    listFiles(artifactsDir)
+      .map((file) => {
+        const filename = basename(file);
+        const classified = classifyAsset(filename);
+        if (!classified) {
+          return null;
+        }
 
-  const assets = [];
-  if (windowsFile) {
-    assets.push(
-      createAsset(
-        'windows',
-        'Windows Installer',
-        inferArch(windowsFile),
-        extname(windowsFile).slice(1),
-        basename(windowsFile),
-        formatSize(statSync(windowsFile).size)
-      )
-    );
-  }
-  if (macFile) {
-    assets.push(
-      createAsset(
-        'macos',
-        'macOS Build',
-        inferArch(macFile),
-        extname(macFile).slice(1),
-        basename(macFile),
-        formatSize(statSync(macFile).size)
-      )
-    );
-  }
-  if (linuxFile) {
-    assets.push(
-      createAsset(
-        'linux',
-        'Linux Package',
-        inferArch(linuxFile),
-        extname(linuxFile).slice(1),
-        basename(linuxFile),
-        formatSize(statSync(linuxFile).size)
-      )
-    );
-  }
-  return assets;
+        return createDirectoryAsset(
+          classified.platform,
+          classified.label,
+          classified.arch,
+          classified.format,
+          filename,
+          formatSize(statSync(file).size)
+        );
+      })
+      .filter(Boolean)
+  );
 };
 
-const inferArch = (file) => {
-  const lower = file.toLowerCase();
-  if (lower.includes('arm64') || lower.includes('aarch64')) {
-    return 'arm64';
-  }
-  if (lower.includes('universal')) {
-    return 'universal';
-  }
-  return 'x64';
-};
+const resolvedAssets = (() => {
+  const metadataAssets = inferAssetsFromMetadata();
+  return metadataAssets.length > 0 ? metadataAssets : inferAssetsFromDirectory();
+})();
+
+const hasReleaseSnapshot = resolvedAssets.length > 0;
 
 const manifest = {
   version,
@@ -179,7 +273,7 @@ const manifest = {
     macos: process.env.RELEASE_MIN_MACOS ?? 'macOS 12',
     linux: process.env.RELEASE_MIN_LINUX ?? 'Ubuntu 22.04 / equivalent',
   },
-  notes: hasArtifactSnapshot
+  notes: hasReleaseSnapshot
     ? [
         'Stable installers are published through GitHub Releases and mirrored on the TableTop Nexus website through a generated manifest.',
         'Verify the published SHA256 checksum before installing if you want to confirm file integrity.',
@@ -188,11 +282,11 @@ const manifest = {
         'No stable release artifact set has been generated yet, so the website should fall back to the GitHub Releases page.',
         'Once a stable release is built and published, this manifest will be regenerated from the actual uploaded installer names and checksums.',
       ],
-  assets: inferAssets(),
+  assets: resolvedAssets,
   links: {
     website: siteUrl,
-    release: hasArtifactSnapshot
-      ? `https://github.com/${repoSlug}/releases/tag/${releaseTag}`
+    release: hasReleaseSnapshot
+      ? releaseMetadata?.url ?? `https://github.com/${repoSlug}/releases/tag/${releaseTag}`
       : `https://github.com/${repoSlug}/releases`,
   },
 };

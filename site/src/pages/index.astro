@@ -3,6 +3,7 @@ import SiteLayout from '../layouts/SiteLayout.astro';
 import { featureGames, highlights } from '../data/catalogue';
 import { siteConfig } from '../data/site-config';
 import { loadReleaseManifest } from '../lib/release-manifest';
+import { withBasePath } from '../lib/site-path';
 
 const releaseManifest = loadReleaseManifest();
 const primaryDownloadLabel = releaseManifest
@@ -23,8 +24,8 @@ const primaryDownloadLabel = releaseManifest
         and downloadable desktop builds into one smooth tabletop lounge.
       </p>
       <div class="button-row">
-        <a class="button-link button-link--primary" href="/downloads">{primaryDownloadLabel}</a>
-        <a class="button-link" href="/games">Browse the game catalogue</a>
+        <a class="button-link button-link--primary" href={withBasePath('/downloads')}>{primaryDownloadLabel}</a>
+        <a class="button-link" href={withBasePath('/games')}>Browse the game catalogue</a>
       </div>
       {releaseManifest ? (
         <p class="hero-meta">

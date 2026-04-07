@@ -1,4 +1,5 @@
-const siteUrl = import.meta.env.PUBLIC_SITE_URL ?? 'https://tabletopnexus.app';
+const siteUrl =
+  import.meta.env.PUBLIC_SITE_URL ?? 'https://digisoluk.github.io/tabletop-nexus/';
 const githubRepoUrl =
   import.meta.env.PUBLIC_GITHUB_REPO_URL ?? 'https://github.com/DigiSolUK/tabletop-nexus';
 const githubIssuesUrl =

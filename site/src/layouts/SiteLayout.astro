@@ -1,6 +1,7 @@
 ---
 import '../styles/site.css';
 import { siteConfig } from '../data/site-config';
+import { withBasePath } from '../lib/site-path';
 
 interface Props {
   title: string;
@@ -9,14 +10,17 @@ interface Props {
 
 const { title, description } = Astro.props;
 const pageTitle = title.includes(siteConfig.appName) ? title : `${title} | ${siteConfig.appName}`;
-const canonicalUrl = new URL(Astro.url.pathname, siteConfig.siteUrl).toString();
-const ogImageUrl = new URL('/og.svg', siteConfig.siteUrl).toString();
+const canonicalPath = Astro.url.pathname.startsWith(import.meta.env.BASE_URL)
+  ? Astro.url.pathname
+  : withBasePath(Astro.url.pathname);
+const canonicalUrl = new URL(canonicalPath, siteConfig.siteUrl).toString();
+const ogImageUrl = new URL(withBasePath('/og.svg'), siteConfig.siteUrl).toString();
 const navItems = [
-  { href: '/', label: 'Home' },
-  { href: '/downloads', label: 'Downloads' },
-  { href: '/games', label: 'Games' },
-  { href: '/faq', label: 'FAQ' },
-  { href: '/support', label: 'Support' },
+  { href: withBasePath('/'), label: 'Home' },
+  { href: withBasePath('/downloads'), label: 'Downloads' },
+  { href: withBasePath('/games'), label: 'Games' },
+  { href: withBasePath('/faq'), label: 'FAQ' },
+  { href: withBasePath('/support'), label: 'Support' },
 ];
 ---
 
@@ -39,12 +43,12 @@ const navItems = [
     <meta name="twitter:title" content={pageTitle} />
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={ogImageUrl} />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/svg+xml" href={withBasePath('/favicon.svg')} />
   </head>
   <body>
     <div class="site-shell">
       <header class="site-header">
-        <a href="/" class="brand-mark">
+        <a href={withBasePath('/')} class="brand-mark">
           <span class="brand-mark__badge">TN</span>
           <span>
             <strong>{siteConfig.appName}</strong>
@@ -69,10 +73,10 @@ const navItems = [
           </p>
         </div>
         <div class="site-footer__links">
-          <a href="/privacy">Privacy</a>
-          <a href="/terms">Terms</a>
-          <a href="/system-requirements">System Requirements</a>
-          <a href="/support">Support</a>
+          <a href={withBasePath('/privacy')}>Privacy</a>
+          <a href={withBasePath('/terms')}>Terms</a>
+          <a href={withBasePath('/system-requirements')}>System Requirements</a>
+          <a href={withBasePath('/support')}>Support</a>
           <a href={siteConfig.githubRepoUrl} target="_blank" rel="noreferrer">GitHub</a>
         </div>
       </footer>

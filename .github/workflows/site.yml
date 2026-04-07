@@ -9,14 +9,33 @@ on:
       - 'site/**'
       - '.github/workflows/site.yml'
 
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  PUBLIC_SITE_URL: https://digisoluk.github.io/tabletop-nexus/
+  PUBLIC_SITE_BASE: /tabletop-nexus/
+  PUBLIC_GITHUB_REPO_URL: https://github.com/DigiSolUK/tabletop-nexus
+  PUBLIC_GITHUB_ISSUES_URL: https://github.com/DigiSolUK/tabletop-nexus/issues
+  PUBLIC_SUPPORT_EMAIL: support@tabletopnexus.app
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: true
+
 jobs:
   deploy:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.actor != 'github-actions[bot]' }}
     runs-on: ubuntu-latest
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-      HAS_CLOUDFLARE: ${{ secrets.CLOUDFLARE_API_TOKEN != '' && secrets.CLOUDFLARE_ACCOUNT_ID != '' }}
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
       - uses: actions/setup-node@v4
         with:
           node-version: 24
@@ -24,16 +43,8 @@ jobs:
       - run: npm ci
       - run: npm --prefix site ci
       - run: npm run site:build
-        env:
-          PUBLIC_SITE_URL: https://tabletopnexus.app
-          PUBLIC_GITHUB_REPO_URL: https://github.com/DigiSolUK/tabletop-nexus
-          PUBLIC_GITHUB_ISSUES_URL: https://github.com/DigiSolUK/tabletop-nexus/issues
-          PUBLIC_SUPPORT_EMAIL: support@tabletopnexus.app
-      - if: ${{ env.HAS_CLOUDFLARE != 'true' }}
-        run: echo "Cloudflare secrets are not configured, so site deployment is being skipped."
-      - if: ${{ env.HAS_CLOUDFLARE == 'true' }}
-        uses: cloudflare/wrangler-action@v3
+      - uses: actions/upload-pages-artifact@v3
         with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy site/dist --project-name tabletop-nexus
+          path: site/dist
+      - id: deployment
+        uses: actions/deploy-pages@v4

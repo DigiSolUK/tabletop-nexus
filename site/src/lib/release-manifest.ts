@@ -1,5 +1,4 @@
-import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
+import manifestData from '../data/release-manifest.generated.json';
 
 export interface ReleaseManifestAsset {
   platform: 'windows' | 'macos' | 'linux';
@@ -28,8 +27,6 @@ export interface ReleaseManifestData {
     release: string;
   };
 }
-
-const manifestPath = fileURLToPath(new URL('../data/release-manifest.generated.json', import.meta.url));
 
 const isAsset = (value: unknown): value is ReleaseManifestAsset => {
   if (!value || typeof value !== 'object') {
@@ -72,11 +69,6 @@ const isManifest = (value: unknown): value is ReleaseManifestData => {
 };
 
 export const loadReleaseManifest = (): ReleaseManifestData | null => {
-  try {
-    const raw = readFileSync(manifestPath, 'utf8');
-    const parsed = JSON.parse(raw) as unknown;
-    return isManifest(parsed) && parsed.assets.length > 0 ? parsed : null;
-  } catch {
-    return null;
-  }
+  const parsed = manifestData as unknown;
+  return isManifest(parsed) && parsed.assets.length > 0 ? parsed : null;
 };

@@ -1,6 +1,7 @@
 ---
 import SiteLayout from '../layouts/SiteLayout.astro';
 import { siteConfig } from '../data/site-config';
+import { withBasePath } from '../lib/site-path';
 ---
 
 <SiteLayout
@@ -18,8 +19,8 @@ import { siteConfig } from '../data/site-config';
     <div class="support-links">
       <a class="button-link button-link--primary" href={`mailto:${siteConfig.supportEmail}`}>Email support</a>
       <a class="button-link" href={siteConfig.githubIssuesUrl} target="_blank" rel="noreferrer">Issue tracker</a>
-      <a class="button-link" href="/faq">Read the FAQ</a>
-      <a class="button-link" href="/downloads">Download installers</a>
+      <a class="button-link" href={withBasePath('/faq')}>Read the FAQ</a>
+      <a class="button-link" href={withBasePath('/downloads')}>Download installers</a>
     </div>
   </section>
 
