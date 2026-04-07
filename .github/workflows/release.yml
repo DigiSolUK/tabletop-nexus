@@ -13,8 +13,6 @@ on:
 
 permissions:
   contents: write
-  pages: write
-  id-token: write
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -23,10 +21,6 @@ env:
   PUBLIC_GITHUB_REPO_URL: https://github.com/DigiSolUK/tabletop-nexus
   PUBLIC_GITHUB_ISSUES_URL: https://github.com/DigiSolUK/tabletop-nexus/issues
   PUBLIC_SUPPORT_EMAIL: support@tabletopnexus.app
-
-concurrency:
-  group: github-pages
-  cancel-in-progress: false
 
 jobs:
   build-desktop:
@@ -58,14 +52,10 @@ jobs:
     needs: build-desktop
     env:
       RELEASE_TAG_NAME: ${{ github.event.inputs.release_tag || github.ref_name }}
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.inputs.release_tag || github.ref }}
-      - uses: actions/configure-pages@v5
       - uses: actions/setup-node@v4
         with:
           node-version: 24
@@ -129,10 +119,3 @@ jobs:
         run: npm --prefix site ci
       - if: ${{ !contains(env.RELEASE_TAG_NAME, '-') }}
         run: npm run site:build
-      - if: ${{ !contains(env.RELEASE_TAG_NAME, '-') }}
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: site/dist
-      - if: ${{ !contains(env.RELEASE_TAG_NAME, '-') }}
-        id: deployment
-        uses: actions/deploy-pages@v4
