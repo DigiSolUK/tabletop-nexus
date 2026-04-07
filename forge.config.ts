@@ -11,6 +11,7 @@ const config: ForgeConfig = {
   packagerConfig: {
     asar: true,
     prune: true,
+    executableName: 'tabletop-nexus',
     protocols: [
       {
         name: 'TableTop Nexus Auth',
